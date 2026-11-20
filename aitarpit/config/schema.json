@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rbidou/aitarpit/config.schema.json",
+  "title": "AI Tarpit configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["persona", "decoy", "admin", "storage", "alerts", "limits", "techniques"],
+  "$defs": {
+    "severity": {"type": "string", "enum": ["info", "low", "medium", "high", "critical"]},
+    "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+    "syslog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port", "protocol"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "name": {"type": "string"},
+        "host": {"type": "string", "minLength": 1},
+        "port": {"$ref": "#/$defs/port"},
+        "protocol": {"type": "string", "enum": ["udp", "tcp"]},
+        "framing": {"type": "string", "enum": ["octet-counting", "newline"]},
+        "facility": {"type": "string", "enum": ["kern", "user", "daemon", "auth", "authpriv", "security", "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]},
+        "app_name": {"type": "string", "minLength": 1, "maxLength": 48},
+        "format": {"type": "string", "enum": ["rfc5424", "cef", "json"]},
+        "min_severity": {"$ref": "#/$defs/severity"},
+        "timeout": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "webhook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "name": {"type": "string"},
+        "url": {"type": "string", "pattern": "^https?://"},
+        "method": {"type": "string", "enum": ["POST", "PUT"]},
+        "headers": {"type": "object", "additionalProperties": {"type": "string"}},
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {"type": "string", "enum": ["none", "bearer", "basic", "header", "hmac"]},
+            "token": {"type": "string"},
+            "username": {"type": "string"},
+            "password": {"type": "string"},
+            "header": {"type": "string"},
+            "value": {"type": "string"},
+            "secret": {"type": "string"}
+          }
+        },
+        "timeout": {"type": "number", "exclusiveMinimum": 0},
+        "verify_tls": {"type": "boolean"},
+        "retries": {"type": "integer", "minimum": 0, "maximum": 10},
+        "min_severity": {"$ref": "#/$defs/severity"}
+      }
+    }
+  },
+  "properties": {
+    "persona": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["company", "domain", "seed"],
+      "properties": {
+        "company": {"type": "string", "minLength": 1},
+        "short_name": {"type": "string", "minLength": 1},
+        "domain": {"type": "string", "minLength": 3},
+        "industry": {"type": "string"},
+        "city": {"type": "string"},
+        "seed": {"type": "integer"},
+        "employees": {"type": "integer", "minimum": 5, "maximum": 500},
+        "services": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "decoy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port"],
+      "properties": {
+        "host": {"type": "string"},
+        "port": {"$ref": "#/$defs/port"},
+        "server_header": {"type": "string"},
+        "trust_proxy": {"type": "boolean"},
+        "session_cookie": {"type": "string", "minLength": 1},
+        "threads": {"type": "integer", "minimum": 4, "maximum": 1024}
+      }
+    },
+    "admin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "host", "port"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "host": {"type": "string"},
+        "port": {"$ref": "#/$defs/port"},
+        "token": {"type": "string"}
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "store_request_headers": {"type": "boolean"},
+        "store_request_bodies": {"type": "boolean"},
+        "max_body_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "alerts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "console": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "color": {"type": "boolean"},
+            "min_severity": {"$ref": "#/$defs/severity"},
+            "show_requests": {"type": "boolean"}
+          }
+        },
+        "syslog": {"type": "array", "items": {"$ref": "#/$defs/syslog"}},
+        "webhooks": {"type": "array", "items": {"$ref": "#/$defs/webhook"}}
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_slow_connections": {"type": "integer", "minimum": 0},
+        "max_bytes_per_session": {"type": "integer", "minimum": 0},
+        "max_body_bytes": {"type": "integer", "minimum": 0},
+        "session_idle_timeout": {"type": "integer", "minimum": 60}
+      }
+    },
+    "techniques": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {"enabled": {"type": "boolean"}}
+      }
+    }
+  }
+}

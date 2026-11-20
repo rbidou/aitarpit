@@ -1,0 +1,48 @@
+{% extends "app/base.html" %}
+{% set active_page = 'reports' %}
+{% block title %}AI Tarpit Admin - Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Reports</h2>
+    <p>Generate an activity report in text, JSON, CSV or HTML</p>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><h3>Generate</h3></div>
+    <div class="panel-body">
+        <div class="form-inline">
+            <select class="form-control form-control-sm" id="report-format" style="max-width:140px;">
+                <option value="text">text</option>
+                <option value="json">json</option>
+                <option value="csv">csv</option>
+                <option value="html">html</option>
+            </select>
+            <input class="form-control form-control-sm" id="report-hours" type="number" min="0" placeholder="last N hours (blank = all)" style="max-width:220px;">
+            <button class="btn btn-primary btn-sm" id="generate-btn">Generate</button>
+        </div>
+    </div>
+</div>
+
+<div id="results-section" style="display:none;">
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Report</h3>
+            <div class="form-inline">
+                <button class="btn btn-sm" id="copy-btn">&#9112; Copy</button>
+                <button class="btn btn-sm" id="download-btn">Download</button>
+            </div>
+        </div>
+        <div class="panel-body"><pre class="output-block" id="report-output"></pre></div>
+    </div>
+</div>
+
+<div id="error-section" style="display:none;">
+    <div class="panel"><div class="panel-body"><div class="empty-state">
+        <p id="error-message" style="color:var(--danger);"></p></div></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}

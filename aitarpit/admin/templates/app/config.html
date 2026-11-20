@@ -1,0 +1,43 @@
+{% extends "app/base.html" %}
+{% set active_page = 'config' %}
+{% block title %}AI Tarpit Admin - Config{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Configuration</h2>
+    <p>Edit the honeypot configuration with guided forms or by editing the raw JSON.
+       Validate before saving; changes apply on restart.</p>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3>Configuration</h3>
+        <div class="form-inline" style="gap:16px;">
+            <div class="segmented" id="mode-toggle" role="tablist" aria-label="Edit mode">
+                <button type="button" class="seg-btn active" data-mode="form" role="tab">Form</button>
+                <button type="button" class="seg-btn" data-mode="raw" role="tab">Raw JSON</button>
+            </div>
+            <button class="btn btn-sm" id="validate-btn">Validate</button>
+            <button class="btn btn-sm btn-primary" id="save-btn">Save</button>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div id="config-result" style="margin-bottom:12px;"></div>
+
+        <form id="config-form-view" onsubmit="return false;">
+            <div id="config-form" class="config-grid">Loading...</div>
+        </form>
+
+        <div id="config-raw-view" style="display:none;">
+            <textarea class="form-control form-control-mono" id="config-text" rows="28" spellcheck="false"
+                      style="width:100%;">Loading...</textarea>
+        </div>
+
+        <p class="field-description" id="config-path"></p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/config.js') }}"></script>
+{% endblock %}

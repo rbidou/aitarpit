@@ -1,0 +1,50 @@
+{% extends "app/base.html" %}
+{% set active_page = 'sessions' %}
+{% block title %}AI Tarpit Admin - Sessions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Sessions</h2>
+    <p>Attacker sessions seen on the decoy surface, with fingerprint classification</p>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><h3>Sessions</h3></div>
+    <div class="panel-body">
+        <div class="form-inline" style="margin-bottom:16px;">
+            <select class="form-control form-control-sm" id="filter-class" style="max-width:180px;">
+                <option value="">All classes</option>
+                <option value="ai_agent">ai_agent</option>
+                <option value="scanner">scanner</option>
+                <option value="human">human</option>
+                <option value="unknown">unknown</option>
+            </select>
+            <button class="btn btn-sm" id="refresh-btn">Refresh</button>
+        </div>
+        <table class="data-table" style="margin-bottom:0;">
+            <thead><tr><th>Session</th><th>Source IP</th><th>Class</th><th>Score</th><th>Req</th>
+            <th>Held</th><th>Techniques</th><th style="width:50px;"></th></tr></thead>
+            <tbody id="sessions-body"><tr><td colspan="8" class="text-muted">Loading...</td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="panel" id="detail-panel" style="display:none;">
+    <div class="panel-header"><h3 id="detail-title">Session detail</h3></div>
+    <div class="panel-body">
+        <div id="detail-summary" style="margin-bottom:16px;"></div>
+        <h3 class="section-label">Requests</h3>
+        <table class="data-table"><thead><tr><th>Time</th><th>Method</th><th>Path</th><th>Status</th>
+        <th>Bytes</th><th>Technique</th></tr></thead><tbody id="detail-requests"></tbody></table>
+        <h3 class="section-label">Events</h3>
+        <table class="data-table"><thead><tr><th>Time</th><th>Severity</th><th>Type</th><th>Message</th></tr></thead>
+        <tbody id="detail-events"></tbody></table>
+        <h3 class="section-label">Submissions (captured)</h3>
+        <pre class="output-block" id="detail-submissions">none</pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/sessions.js') }}"></script>
+{% endblock %}

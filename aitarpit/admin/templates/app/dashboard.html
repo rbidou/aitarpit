@@ -1,0 +1,38 @@
+{% extends "app/base.html" %}
+{% set active_page = 'dashboard' %}
+{% block title %}AI Tarpit Admin - Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <p>Live view of attacker activity against the decoy surface</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-value" id="stat-sessions">0</div><div class="stat-label">Sessions</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">Active now</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-requests">0</div><div class="stat-label">Requests</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-held">0s</div><div class="stat-label">Time held</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-tokens">0</div><div class="stat-label">Est. tokens wasted</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-critical">0</div><div class="stat-label">Critical alerts</div></div>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><h3>Persona</h3></div>
+    <div class="panel-body"><div id="persona-line" class="text-muted">Loading...</div></div>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><h3>Recent events</h3></div>
+    <div class="panel-body">
+        <table class="data-table" style="margin-bottom:0;">
+            <thead><tr><th>Time</th><th>Severity</th><th>Technique</th><th>Type</th><th>Message</th></tr></thead>
+            <tbody id="events-body"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

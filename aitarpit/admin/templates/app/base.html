@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Tarpit Admin{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script>window.AITARPIT_ADMIN_TOKEN = {{ admin_token|tojson }};</script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <h1><a href="https://github.com/rbidou/aitarpit" target="_blank" rel="noopener noreferrer">AI Tarpit</a></h1>
+            <div class="subtitle">Admin Console</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="{% if active_page == 'dashboard' %}active{% endif %}">
+                <span class="nav-icon">&#9632;</span><span class="nav-label">Dashboard</span>
+            </a>
+            <a href="{{ url_for('admin_sessions') }}" class="{% if active_page == 'sessions' %}active{% endif %}">
+                <span class="nav-icon">&#9673;</span><span class="nav-label">Sessions</span>
+            </a>
+            <a href="{{ url_for('admin_events') }}" class="{% if active_page == 'events' %}active{% endif %}">
+                <span class="nav-icon">&#9654;</span><span class="nav-label">Events</span>
+            </a>
+            <a href="{{ url_for('admin_techniques') }}" class="{% if active_page == 'techniques' %}active{% endif %}">
+                <span class="nav-icon">&#9673;</span><span class="nav-label">Techniques</span>
+            </a>
+            <a href="{{ url_for('admin_config') }}" class="{% if active_page == 'config' %}active{% endif %}">
+                <span class="nav-icon">&#9881;</span><span class="nav-label">Config</span>
+            </a>
+            <a href="{{ url_for('admin_reports') }}" class="{% if active_page == 'reports' %}active{% endif %}">
+                <span class="nav-icon">&#128196;</span><span class="nav-label">Reports</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            AI Tarpit &middot; honeypot for AI-agent attacks.<br>Admin surface &mdash; keep on loopback.
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

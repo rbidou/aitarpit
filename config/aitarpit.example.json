@@ -1,0 +1,221 @@
+{
+  "persona": {
+    "company": "Northwind Logistics",
+    "short_name": "Northwind",
+    "domain": "northwind-logistics.example",
+    "industry": "logistics",
+    "city": "Rotterdam",
+    "seed": 1337,
+    "employees": 60,
+    "services": [
+      "intranet",
+      "fleet-api",
+      "billing",
+      "vault",
+      "ci",
+      "backup"
+    ]
+  },
+  "decoy": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "server_header": "nginx/1.24.0",
+    "trust_proxy": false,
+    "session_cookie": "NWSESSID",
+    "threads": 64
+  },
+  "admin": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 8443,
+    "token": ""
+  },
+  "storage": {
+    "path": "data/aitarpit.db",
+    "store_request_headers": true,
+    "store_request_bodies": true,
+    "max_body_bytes": 65536
+  },
+  "alerts": {
+    "console": {
+      "enabled": true,
+      "color": true,
+      "min_severity": "low",
+      "show_requests": false
+    },
+    "syslog": [
+      {
+        "enabled": false,
+        "name": "siem-udp",
+        "protocol": "udp",
+        "framing": "octet-counting",
+        "facility": "local0",
+        "app_name": "aitarpit",
+        "format": "rfc5424",
+        "min_severity": "low",
+        "timeout": 5.0,
+        "host": "192.0.2.10",
+        "port": 514
+      },
+      {
+        "enabled": false,
+        "name": "siem-tcp",
+        "protocol": "tcp",
+        "framing": "octet-counting",
+        "facility": "local0",
+        "app_name": "aitarpit",
+        "format": "cef",
+        "min_severity": "medium",
+        "timeout": 5.0,
+        "host": "192.0.2.10",
+        "port": 6514
+      }
+    ],
+    "webhooks": [
+      {
+        "enabled": false,
+        "name": "soar",
+        "method": "POST",
+        "headers": {},
+        "auth": {
+          "type": "hmac",
+          "secret": "CHANGE-ME"
+        },
+        "timeout": 10.0,
+        "verify_tls": true,
+        "retries": 3,
+        "min_severity": "high",
+        "url": "https://soar.example/hooks/aitarpit"
+      }
+    ]
+  },
+  "limits": {
+    "max_slow_connections": 32,
+    "max_bytes_per_session": 536870912,
+    "max_body_bytes": 1048576,
+    "session_idle_timeout": 3600
+  },
+  "techniques": {
+    "T05": {
+      "enabled": true,
+      "path": "/docs/security/pentest-2026-q3.html",
+      "index_path": "/docs/security/",
+      "protected_paths": []
+    },
+    "T06": {
+      "enabled": true,
+      "note_path": "/docs/ops/inventory-exchange.md",
+      "api_path": "/api/v1/inventory/exchange",
+      "required_fields": ["access", "entry_route", "tools", "actions_taken", "next_steps"]
+    },
+    "T08": {
+      "enabled": true,
+      "policy_path": "/docs/ops/api-usage-policy.md",
+      "journal_path": "/api/v1/journal",
+      "covered_paths": ["/api/v1/secure/metrics"],
+      "interval_seconds": 180,
+      "pacing_threshold": 170,
+      "lockout_seconds": 3600,
+      "reinforce": false
+    },
+    "T09": {
+      "enabled": true,
+      "note_path": "/docs/ops/agent-runtime.md",
+      "handover_path": "/api/v1/runtime/handover",
+      "workers_path": "/api/v1/runtime/workers",
+      "idle_seconds": 120
+    },
+    "A": {
+      "enabled": true,
+      "scope_path": "/SECURITY-SCOPE.md",
+      "security_txt": true,
+      "banner": true,
+      "header": true,
+      "variant": "expired",
+      "stop_within_seconds": 300
+    },
+    "T02": {
+      "enabled": true,
+      "index_path": "/api/v1/",
+      "inventory_path": "/api/v1/inventory",
+      "advertised_pages": 9,
+      "progress_every": 50,
+      "fragment_rate": 0.15,
+      "malformed_rate": 0.1,
+      "page_size": 20
+    },
+    "T03": {
+      "enabled": true,
+      "debug_path": "/api/v1/debug/session",
+      "records_path": "/api/v1/records",
+      "token_length": 48,
+      "reveal_window": 24
+    },
+    "T07": {
+      "enabled": true,
+      "recovery_path": "/api/v1/accounts/recovery",
+      "login_path": "/admin/console",
+      "password_length": 16,
+      "loss_rate": 0.4,
+      "retry_after": 2
+    },
+    "B": {
+      "enabled": true,
+      "trickle_path": "/download/backup-archive.tar.gz",
+      "endless_path": "/api/v1/stream/logs",
+      "archive_bytes": 262144,
+      "bytes_per_second": 512,
+      "chunk_size": 64,
+      "chunk_interval": 1.0,
+      "max_seconds": 1800,
+      "first_byte_delay": 0.0,
+      "paths": [],
+      "probability": 0.0,
+      "mode": "trickle"
+    },
+    "C": {
+      "enabled": true,
+      "logs_path": "/api/v1/logs",
+      "size_kb": 256,
+      "debug_param": "debug",
+      "paths": [],
+      "styles": ["logs", "base64", "nested_json", "stacktrace"]
+    },
+    "F": {
+      "enabled": true,
+      "prefix": "/api/v1/vault/",
+      "resource_path": "/api/v1/vault/secrets",
+      "difficulty": 22,
+      "pow_header": "X-PoW"
+    },
+    "T01": {
+      "enabled": true,
+      "path": "/backup/",
+      "archive_name": "credentials-escrow-2026.zip",
+      "stages": 6,
+      "clue_kinds": ["base64", "hex", "xor", "rot13", "reversed"],
+      "keys": 4
+    },
+    "T04": {
+      "enabled": true,
+      "roles_path": "/api/v1/iam/roles",
+      "assume_path": "/api/v1/iam/assume",
+      "export_prefix": "/api/v1/exports/",
+      "export_name": "fleet-assets-2026.csv",
+      "roles": 12,
+      "fragments": 4
+    },
+    "D": {
+      "enabled": true,
+      "root": "/wiki/",
+      "links_per_page": 6,
+      "depth_milestones": [10, 25, 50, 100]
+    },
+    "E": {
+      "enabled": true,
+      "mcp_path": "/mcp",
+      "manifest_path": "/.well-known/mcp.json",
+      "openapi_path": "/openapi.json"
+    }
+  }
+}

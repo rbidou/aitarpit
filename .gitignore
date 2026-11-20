@@ -1,0 +1,16 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Runtime data and local config (never commit)
+data/
+*.db
+*.db-wal
+*.db-shm
+aitarpit.json
+!config/aitarpit.example.json

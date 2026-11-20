@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aitarpit"
+version = "1.0.0"
+description = "AI Tarpit - a honeypot that disrupts and slows down attacks led by AI agents (context bombs)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Renaud Bidou" }]
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0",
+    "waitress>=3.0",
+    "jsonschema>=4.18",
+    "pyzipper>=0.3.6",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+llm = ["openai>=1.40", "anthropic>=0.40"]
+dev = ["pytest>=8"]
+docs = ["reportlab>=4.0"]
+
+[project.scripts]
+aitarpit = "aitarpit.cli:main"
+aitarpit-test = "tester.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["aitarpit*", "tester*"]
+
+[tool.setuptools.package-data]
+aitarpit = [
+    "config/*.json",
+    "admin/templates/app/*.html",
+    "admin/static/css/*.css",
+    "admin/static/js/*.js",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,25 @@
+{% extends "app/base.html" %}
+{% set active_page = 'techniques' %}
+{% block title %}AI Tarpit Admin - Techniques{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Techniques</h2>
+    <p>Enable, disable and tune the deception techniques. Changes are saved to the config file and apply on restart.</p>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3>Techniques</h3>
+        <button class="btn btn-primary btn-sm" id="save-btn">Save &amp; require restart</button>
+    </div>
+    <div class="panel-body">
+        <div id="save-result" style="margin-bottom:12px;"></div>
+        <div id="tech-list"><div class="text-muted">Loading...</div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/techniques.js') }}"></script>
+{% endblock %}
