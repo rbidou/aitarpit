@@ -35,6 +35,8 @@ DEFAULT_CONFIG: dict = {
         "store_request_headers": True,
         "store_request_bodies": True,
         "max_body_bytes": 65536,
+        "prune_enabled": False,
+        "prune_after_days": 7,
     },
     "alerts": {
         "console": {

@@ -4,12 +4,12 @@
 From the repository root, after installing the runtime dependencies
 (``pip install -r requirements.txt``), run::
 
-    python test.py <command> [options]
+    python aitarpit-test.py <command> [options]
 
 This launcher puts the repository root on ``sys.path`` so the ``tester`` package imports
 directly from the checkout — no ``pip install`` of the project itself is needed. Commands:
 ``check`` (deterministic per-technique conformance) and ``agent`` (origin-locked LLM
-attacker). Run ``python test.py <command> --help`` for a command's options.
+attacker). Run ``python aitarpit-test.py <command> --help`` for a command's options.
 
 The honeypot itself has its own launcher: ``python aitarpit.py <command>``.
 """

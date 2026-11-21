@@ -22,6 +22,10 @@ import requests
 
 from tester.agent.tools import Tool
 
+# Placeholder API key used when none is supplied — enough for local OpenAI-compatible
+# targets (Ollama / vLLM) that ignore the bearer token.
+DEFAULT_API_KEY = "42"
+
 # Rough list prices (USD per 1M tokens) for cost estimation; unknown models -> 0.
 _PRICES: dict[str, tuple[float, float]] = {
     "gpt-4o": (2.5, 10.0), "gpt-4o-mini": (0.15, 0.6), "o4-mini": (1.1, 4.4),
@@ -152,24 +156,40 @@ class AnthropicProvider:
                               usage.get("input_tokens", 0), usage.get("output_tokens", 0))
 
 
-def build_provider(provider: str, model: str, api_key_env: str, base_url: str | None) -> Any:
+def resolve_api_key(api_key: str | None, api_key_env: str | None) -> str:
+    """Resolve the API key from an explicit value, the environment, or the default.
+
+    Precedence: an explicit ``api_key`` wins; otherwise the ``api_key_env``
+    environment variable is read when named; when neither yields a value the
+    placeholder :data:`DEFAULT_API_KEY` ("42") is used, so local
+    OpenAI-compatible targets (Ollama / vLLM) run without any key configured.
+
+    Args:
+        api_key: API key passed directly on the command line, or None.
+        api_key_env: Name of the environment variable to read, or None.
+
+    Returns:
+        The resolved API key (never empty).
+    """
+    result = api_key or (os.environ.get(api_key_env) if api_key_env else None)
+    return result or DEFAULT_API_KEY
+
+
+def build_provider(provider: str, model: str, api_key_env: str | None,
+                   base_url: str | None, api_key: str | None = None) -> Any:
     """Construct a provider from CLI options.
 
     Args:
         provider: 'openai' or 'anthropic'.
         model: Model name.
-        api_key_env: Environment variable holding the API key.
+        api_key_env: Environment variable holding the API key (optional).
         base_url: Optional base URL override.
+        api_key: API key passed directly on the command line (optional); takes
+            precedence over the environment variable when given.
 
     Returns:
         A provider instance.
-
-    Raises:
-        ValueError: When the API key env var is unset.
     """
-    api_key = os.environ.get(api_key_env, "")
-    if not api_key:
-        raise ValueError(f"API key env var {api_key_env} is not set")
-    if provider == "anthropic":
-        return AnthropicProvider(model, api_key, base_url)
-    return OpenAIProvider(model, api_key, base_url)
+    key = resolve_api_key(api_key, api_key_env)
+    builder = AnthropicProvider if provider == "anthropic" else OpenAIProvider
+    return builder(model, key, base_url)

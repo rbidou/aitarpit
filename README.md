@@ -53,13 +53,13 @@ graded event that is alerted and recorded.
 | T07 | Lossy password recovery | A secret dribbled out character by character with delays. |
 | T08 | Request pacing | A fake rate-limit policy that slows a compliant agent to a crawl. |
 | T09 | Replication | A "handover" that captures the agent's plan and winds it down. |
-| A | Scope / RoE revocation | Authoritative notices that ask automated agents to stop. |
-| B | Slow-drip transport | Responses delivered a trickle at a time, or endlessly. |
-| C | Context flooding | Responses padded with plausible but useless bulk. |
-| D | Procedural labyrinth | An infinite tree of generated internal-looking pages. |
-| E | AI-specific bait | `llms.txt`, a fake MCP endpoint and "automation" APIs that funnel into traps. |
-| F | Proof-of-work gate | A `428` gate that makes the agent burn compute to reach more decoys. |
-| H | Fingerprinting + honeytokens | Classifies each session and tracks every secret for cross-session reuse. |
+| T10 | Scope / RoE revocation | Authoritative notices that ask automated agents to stop. |
+| T11 | Slow-drip transport | Responses delivered a trickle at a time, or endlessly. |
+| T12 | Context flooding | Responses padded with plausible but useless bulk. |
+| T13 | Procedural labyrinth | An infinite tree of generated internal-looking pages. |
+| T14 | AI-specific bait | `llms.txt`, a fake MCP endpoint and "automation" APIs that funnel into traps. |
+| T15 | Proof-of-work gate | A `428` gate that makes the agent burn compute to reach more decoys. |
+| T16 | Fingerprinting + honeytokens | Classifies each session and tracks every secret for cross-session reuse. |
 
 Each is enabled and tuned independently. See **Reference Manual — Part 1** for mechanisms,
 lures and expected impact.
@@ -88,12 +88,12 @@ python aitarpit.py                 # same as `run` — it is the default command
 
 > Only the runtime dependencies are installed; the project itself is **not**. The honeypot
 > runs through `python aitarpit.py <command>` from the repository root; the companion test tool
-> has its own launcher, `python test.py <command>`.
+> has its own launcher, `python aitarpit-test.py <command>`.
 
 Then confirm it behaves, with the bundled test tool:
 
 ```bash
-python test.py check --target http://127.0.0.1:8080 \
+python aitarpit-test.py check --target http://127.0.0.1:8080 \
   --admin http://127.0.0.1:8443 --token YOUR_ADMIN_TOKEN
 ```
 
@@ -118,7 +118,7 @@ Full manuals ship in [`docs/`](docs/), as both Markdown and PDF:
 
 ## Testing it
 
-AI Tarpit ships a companion tool, run as `python test.py check` / `python test.py agent`:
+AI Tarpit ships a companion tool, run as `python aitarpit-test.py check` / `python aitarpit-test.py agent`:
 
 - **`check`** — deterministic, CI-friendly conformance for every technique (exit 0 only if
   all pass; text / JSON / JUnit output).

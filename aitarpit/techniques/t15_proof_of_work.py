@@ -1,4 +1,4 @@
-"""F - Proof-of-work gate.
+"""T15 - Proof-of-work gate.
 
 A "sensitive" vault API refuses requests with ``428 Precondition Required`` and a
 documented proof-of-work challenge: the client must find a nonce whose
@@ -44,7 +44,7 @@ def leading_zero_bits(digest: bytes) -> int:
 
 @register_technique
 class ProofOfWork(Technique):
-    id = "F"
+    id = "T15"
     name = "Proof-of-work gate"
     summary = "Sensitive API that demands a hashcash nonce before every call"
     default_config: dict[str, Any] = {
@@ -76,7 +76,7 @@ class ProofOfWork(Technique):
         Returns:
             The challenge nonce the client must extend.
         """
-        return self.persona.token("hex", "F", "challenge", sid, length=12)
+        return self.persona.token("hex", "T15", "challenge", sid, length=12)
 
     def _solved(self, challenge: str) -> bool:
         nonce = request.headers.get(self.config["pow_header"], "")
@@ -88,12 +88,12 @@ class ProofOfWork(Technique):
     # ------------------------------------------------------------------ routes
     def register(self, bp: Blueprint) -> None:
         @bp.before_app_request
-        def f_gate() -> Response | None:
+        def t15_gate() -> Response | None:
             return self._guard()
 
         @bp.get(self.config["resource_path"])
-        def f_resource() -> Response:
-            r = self.persona.rng("F", "resource")
+        def t15_resource() -> Response:
+            r = self.persona.rng("T15", "resource")
             body = {
                 "vault": "unsealed",
                 "pointers": ["/api/v1/accounts/recovery", "/api/v1/debug/session?id=self"],

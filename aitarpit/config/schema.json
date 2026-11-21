@@ -105,7 +105,9 @@
         "path": {"type": "string", "minLength": 1},
         "store_request_headers": {"type": "boolean"},
         "store_request_bodies": {"type": "boolean"},
-        "max_body_bytes": {"type": "integer", "minimum": 0}
+        "max_body_bytes": {"type": "integer", "minimum": 0},
+        "prune_enabled": {"type": "boolean"},
+        "prune_after_days": {"type": "integer", "minimum": 1}
       }
     },
     "alerts": {

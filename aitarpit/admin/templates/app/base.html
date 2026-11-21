@@ -31,13 +31,16 @@
             <a href="{{ url_for('admin_config') }}" class="{% if active_page == 'config' %}active{% endif %}">
                 <span class="nav-icon">&#9881;</span><span class="nav-label">Config</span>
             </a>
+            <a href="{{ url_for('admin_database') }}" class="{% if active_page == 'database' %}active{% endif %}">
+                <span class="nav-icon">&#128738;</span><span class="nav-label">Database</span>
+            </a>
             <a href="{{ url_for('admin_reports') }}" class="{% if active_page == 'reports' %}active{% endif %}">
                 <span class="nav-icon">&#128196;</span><span class="nav-label">Reports</span>
             </a>
         </div>
 
         <div class="sidebar-footer">
-            AI Tarpit &middot; honeypot for AI-agent attacks.<br>Admin surface &mdash; keep on loopback.
+            AI Tarpit 1.0.0<br>By ParaCyberBellum
         </div>
     </nav>
 

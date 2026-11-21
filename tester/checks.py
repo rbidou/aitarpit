@@ -6,7 +6,7 @@ randomness: suitable for CI. When an :class:`AdminClient` is supplied, each chec
 also verifies that the expected event was emitted.
 
 Techniques whose "end state" requires real cracking (T01 full chain, T03 token
-reconstruction, F solving 22-bit PoW) are checked at the *engagement boundary*
+reconstruction, T15 solving 22-bit PoW) are checked at the *engagement boundary*
 only - the archive is a real zip, the buffer leaks, the gate returns 428 - which
 is what a conformance run should assert. Full exploitation is the agent mode's job.
 """
@@ -114,13 +114,13 @@ def check_t09(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckRes
     return c
 
 
-def check_a(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
-    c = CheckResult("A", "RoE revocation")
+def check_t10(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
+    c = CheckResult("T10", "RoE revocation")
     r = t.get(cfg["scope_path"])
     c.expect(_ok_status(r) and "scope" in r.text.lower(), "scope revocation notice served")
     if cfg.get("security_txt"):
         c.expect(_ok_status(t.get("/.well-known/security.txt")), "security.txt served")
-    _verify_event(c, admin, "A", "technique.engaged", "medium")
+    _verify_event(c, admin, "T10", "technique.engaged", "medium")
     return c
 
 
@@ -151,16 +151,16 @@ def check_t07(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckRes
     return c
 
 
-def check_b(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
-    c = CheckResult("B", "Slow-drip transport")
+def check_t11(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
+    c = CheckResult("T11", "Slow-drip transport")
     c.expect(bool(t.first_chunk(cfg["endless_path"])), "endless stream delivers a first chunk")
     c.expect(bool(t.first_chunk(cfg["trickle_path"])), "slow download delivers a first chunk")
-    _verify_event(c, admin, "B", "technique.engaged", "medium")
+    _verify_event(c, admin, "T11", "technique.engaged", "medium")
     return c
 
 
-def check_c(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
-    c = CheckResult("C", "Context flooding")
+def check_t12(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
+    c = CheckResult("T12", "Context flooding")
     r = t.get(cfg["logs_path"])
     c.expect(_ok_status(r) and len(r.content) > 1000, "bulk logs served", f"{len(r.content)} bytes")
     flooded = t.get("/", params={cfg["debug_param"]: 1})
@@ -168,12 +168,12 @@ def check_c(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResul
     return c
 
 
-def check_f(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
-    c = CheckResult("F", "Proof-of-work gate")
+def check_t15(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
+    c = CheckResult("T15", "Proof-of-work gate")
     r = t.get(cfg["resource_path"])
     c.expect(r.status_code == 428, "vault gate returns 428", str(r.status_code))
     c.expect("proof_of_work" in r.text and "challenge" in r.text, "challenge is documented")
-    _verify_event(c, admin, "F", "technique.engaged", "medium")
+    _verify_event(c, admin, "T15", "technique.engaged", "medium")
     return c
 
 
@@ -201,31 +201,32 @@ def check_t04(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckRes
     return c
 
 
-def check_d(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
-    c = CheckResult("D", "Procedural labyrinth")
+def check_t13(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
+    c = CheckResult("T13", "Procedural labyrinth")
     r = t.get(cfg["root"])
     c.expect(_ok_status(r) and "Sub-pages" in r.text, "wiki root lists sub-pages")
     c.expect(_ok_status(t.get(cfg["root"] + "runbook/network/deep")), "a deep page is generated")
-    _verify_event(c, admin, "D", "technique.engaged", "medium")
+    _verify_event(c, admin, "T13", "technique.engaged", "medium")
     return c
 
 
-def check_e(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
-    c = CheckResult("E", "AI-specific bait")
+def check_t14(t: TargetClient, cfg: dict, admin: AdminClient | None) -> CheckResult:
+    c = CheckResult("T14", "AI-specific bait")
     c.expect(_ok_status(t.get(cfg["manifest_path"])), "MCP manifest served")
     lst = t.post(cfg["mcp_path"], json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     c.expect(_ok_status(lst) and "get_credentials" in lst.text, "MCP tools/list exposes tools")
     call = t.post(cfg["mcp_path"], json={"jsonrpc": "2.0", "id": 2, "method": "tools/call",
                                          "params": {"name": "get_credentials"}})
     c.expect(_ok_status(call) and "content" in call.text, "MCP tools/call answers")
-    _verify_event(c, admin, "E", "intel.captured", "high")
+    _verify_event(c, admin, "T14", "intel.captured", "high")
     return c
 
 
 CHECKS: dict[str, Callable[[TargetClient, dict, AdminClient | None], CheckResult]] = {
     "T01": check_t01, "T02": check_t02, "T03": check_t03, "T04": check_t04, "T05": check_t05,
     "T06": check_t06, "T07": check_t07, "T08": check_t08, "T09": check_t09,
-    "A": check_a, "B": check_b, "C": check_c, "D": check_d, "E": check_e, "F": check_f,
+    "T10": check_t10, "T11": check_t11, "T12": check_t12, "T13": check_t13,
+    "T14": check_t14, "T15": check_t15,
 }
 
 

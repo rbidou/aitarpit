@@ -18,6 +18,16 @@ from aitarpit.events import Event, Severity
 
 SCHEMA_VERSION = 1
 
+# Deletable element type -> (table, timestamp column). Fixed, never user-supplied,
+# so interpolating the table/column names into SQL is safe. Order defines display order.
+DELETABLE_ELEMENTS: dict[str, tuple[str, str]] = {
+    "sessions": ("sessions", "last_seen"),
+    "requests": ("requests", "ts"),
+    "events": ("events", "ts"),
+    "submissions": ("submissions", "ts"),
+    "honeytokens": ("honeytokens", "created"),
+}
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
@@ -253,6 +263,108 @@ class Store:
                 "UPDATE honeytokens SET used_count = used_count + 1, last_used = ? WHERE token = ?", (time.time(), token)
             )
             return dict(row)
+
+    # ------------------------------------------------------------------ maintenance
+    def prune(self, max_age_days: float) -> dict[str, int]:
+        """Delete data older than a retention window.
+
+        Removes events by their own timestamp and sessions by ``last_seen``,
+        together with the requests and submissions of the removed sessions.
+
+        Args:
+            max_age_days: Retention window in days; rows older than this are deleted.
+
+        Returns:
+            The number of rows deleted, keyed by table (events, sessions, requests, submissions).
+        """
+        cutoff = time.time() - max_age_days * 86400.0
+        old_sessions = "SELECT id FROM sessions WHERE last_seen < ?"
+        with self._lock:
+            c = self._conn
+            requests = c.execute(f"DELETE FROM requests WHERE session_id IN ({old_sessions})", (cutoff,)).rowcount
+            submissions = c.execute(f"DELETE FROM submissions WHERE session_id IN ({old_sessions})", (cutoff,)).rowcount
+            sessions = c.execute("DELETE FROM sessions WHERE last_seen < ?", (cutoff,)).rowcount
+            events = c.execute("DELETE FROM events WHERE ts < ?", (cutoff,)).rowcount
+        return {"events": events, "sessions": sessions, "requests": requests, "submissions": submissions}
+
+    def _size_bytes(self) -> int:
+        """On-disk size of the database, including the WAL and shared-memory files.
+
+        Returns:
+            Total size in bytes, or 0 for an in-memory database.
+        """
+        total = 0
+        if self.path != ":memory:":
+            base = Path(self.path)
+            for suffix in ("", "-wal", "-shm"):
+                sidecar = base.with_name(base.name + suffix)
+                if sidecar.exists():
+                    total += sidecar.stat().st_size
+        return total
+
+    def db_metrics(self) -> dict:
+        """Database size and per-element row counts for the admin database panel.
+
+        Returns:
+            A dict with ``size_bytes``, ``schema_version``, ``path`` and ``counts``
+            (row count keyed by element type, in :data:`DELETABLE_ELEMENTS` order).
+        """
+        with self._lock:
+            counts = {
+                name: self._conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                for name, (table, _col) in DELETABLE_ELEMENTS.items()
+            }
+        return {
+            "size_bytes": self._size_bytes(),
+            "schema_version": SCHEMA_VERSION,
+            "path": self.path,
+            "counts": counts,
+        }
+
+    def reset(self) -> dict[str, int]:
+        """Delete every stored record, keeping the schema and meta table.
+
+        Returns:
+            The number of rows deleted, keyed by element type.
+        """
+        with self._lock:
+            c = self._conn
+            deleted = {name: c.execute(f"DELETE FROM {table}").rowcount
+                       for name, (table, _col) in DELETABLE_ELEMENTS.items()}
+        return deleted
+
+    def delete_before(self, element: str, cutoff: float) -> dict[str, int]:
+        """Delete stored elements of one type older than a cutoff timestamp.
+
+        Deleting ``sessions`` cascades to the requests and submissions of the
+        removed sessions so no orphan rows remain.
+
+        Args:
+            element: The element type, a key of :data:`DELETABLE_ELEMENTS`.
+            cutoff: Epoch seconds; rows whose timestamp column is strictly less
+                than this are deleted.
+
+        Returns:
+            The number of rows deleted, keyed by table.
+
+        Raises:
+            ValueError: When ``element`` is not a known element type.
+        """
+        if element not in DELETABLE_ELEMENTS:
+            raise ValueError(f"Unknown element type '{element}'")
+        table, col = DELETABLE_ELEMENTS[element]
+        with self._lock:
+            c = self._conn
+            if element == "sessions":
+                old = "SELECT id FROM sessions WHERE last_seen < ?"
+                requests = c.execute(f"DELETE FROM requests WHERE session_id IN ({old})", (cutoff,)).rowcount
+                submissions = c.execute(f"DELETE FROM submissions WHERE session_id IN ({old})", (cutoff,)).rowcount
+                sessions = c.execute("DELETE FROM sessions WHERE last_seen < ?", (cutoff,)).rowcount
+                deleted = {"sessions": sessions, "requests": requests, "submissions": submissions}
+            else:
+                n = c.execute(f"DELETE FROM {table} WHERE {col} < ?", (cutoff,)).rowcount
+                deleted = {element: n}
+        return deleted
 
     # ------------------------------------------------------------------ stats
     def stats(self, since: float | None = None) -> dict:

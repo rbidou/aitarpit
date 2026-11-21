@@ -53,10 +53,15 @@ function formatTs(ts) {
 /** Badge class per event severity. */
 const SEVERITY_BADGE = {
     info: 'badge-neutral', low: 'badge-info', medium: 'badge-warning',
-    high: 'badge-danger', critical: 'badge-danger',
+    high: 'badge-danger', critical: 'badge-critical',
 };
 
 /** Badge class per session classification. */
 const CLASS_BADGE = {
     ai_agent: 'badge-danger', scanner: 'badge-warning', human: 'badge-success', unknown: 'badge-neutral',
+};
+
+/** Display label per session classification. */
+const CLASS_LABEL = {
+    ai_agent: 'AI Agent', scanner: 'Scanner', human: 'Human', unknown: 'Unknown',
 };

@@ -12,7 +12,7 @@ package imports directly from the checkout — no ``pip install`` of the project
 needed. Commands: ``init-config``, ``validate``, ``run``, ``techniques``, ``test-alert``,
 ``report``, ``export``. Run ``python aitarpit.py <command> --help`` for a command's options.
 
-The companion test tool has its own launcher: ``python test.py <command>``.
+The companion test tool has its own launcher: ``python aitarpit-test.py <command>``.
 """
 
 from __future__ import annotations

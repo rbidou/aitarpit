@@ -30,7 +30,7 @@ function renderTechniques(techniques, configs) {
         const options = { ...cfg };
         delete options.enabled;
         const checked = cfg.enabled ? 'checked' : '';
-        return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:10px;">
+        return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
             <label class="toggle-row" style="justify-content:space-between;">
                 <span><span class="tech-id">${escapeHtml(t.id)}</span> <span class="toggle-label">${escapeHtml(t.name)}</span>
                     <span class="text-muted" style="font-size:12px;"> &mdash; ${escapeHtml(t.summary)}</span></span>

@@ -138,6 +138,58 @@ class AdminEngine:
         )
         return make_function_result(True, "", {"events": rows})
 
+    def database(self, params: dict) -> tuple:
+        """Report database size and per-element row counts.
+
+        Args:
+            params: Unused.
+
+        Returns:
+            Tuple of (result, message, data) with the database metrics.
+        """
+        self.ctx.sessions.flush()
+        return make_function_result(True, "", self.ctx.store.db_metrics())
+
+    def database_delete(self, params: dict) -> tuple:
+        """Delete stored elements of one type older than a cutoff timestamp.
+
+        Args:
+            params: 'element' (sessions|requests|events|submissions|honeytokens)
+                and 'cutoff' (epoch seconds); rows strictly older are deleted.
+
+        Returns:
+            Tuple of (result, message, data) with the per-table delete counts.
+        """
+        from aitarpit.storage import DELETABLE_ELEMENTS
+
+        element = str(params.get("element") or "")
+        if element not in DELETABLE_ELEMENTS:
+            return make_function_result(False, f"Unknown element type '{element}'", {})
+        try:
+            cutoff = float(params.get("cutoff"))
+        except (TypeError, ValueError):
+            return make_function_result(False, "Missing or invalid 'cutoff' timestamp", {})
+        if cutoff <= 0:
+            return make_function_result(False, "'cutoff' must be a positive timestamp", {})
+        self.ctx.sessions.flush()
+        deleted = self.ctx.store.delete_before(element, cutoff)
+        total = sum(deleted.values())
+        return make_function_result(True, f"Deleted {total} record(s).", {"deleted": deleted})
+
+    def database_reset(self, params: dict) -> tuple:
+        """Delete every stored record (keeps the schema).
+
+        Args:
+            params: Unused.
+
+        Returns:
+            Tuple of (result, message, data) with the per-element delete counts.
+        """
+        self.ctx.sessions.flush()
+        deleted = self.ctx.store.reset()
+        total = sum(deleted.values())
+        return make_function_result(True, f"Database reset. Deleted {total} record(s).", {"deleted": deleted})
+
     def config_get(self, params: dict) -> tuple:
         """Return the active configuration (runtime-only keys stripped).
 

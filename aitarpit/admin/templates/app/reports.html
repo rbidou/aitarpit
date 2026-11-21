@@ -5,11 +5,50 @@
 {% block content %}
 <div class="page-header">
     <h2>Reports</h2>
-    <p>Generate an activity report in text, JSON, CSV or HTML</p>
+    <p>Interactive activity report over the decoy surface</p>
 </div>
 
 <div class="panel">
-    <div class="panel-header"><h3>Generate</h3></div>
+    <div class="panel-header">
+        <h3>Filters</h3>
+        <span class="text-muted" id="report-updated"></span>
+    </div>
+    <div class="panel-body">
+        <div class="filter-bar">
+            <div class="filter-field">
+                <label>Timeframe</label>
+                <select class="form-control form-control-sm" id="tf-select"></select>
+            </div>
+            <div class="filter-field"><label>Event type</label><div id="ms-type"></div></div>
+            <div class="filter-field"><label>Severity</label><div id="ms-severity"></div></div>
+            <div class="filter-field"><label>Classification</label><div id="ms-class"></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-value" id="card-sessions">0</div><div class="stat-label">Sessions</div></div>
+    <div class="stat-card"><div class="stat-value" id="card-requests">0</div><div class="stat-label">Requests</div></div>
+    <div class="stat-card"><div class="stat-value" id="card-held">0s</div><div class="stat-label">Time held</div></div>
+    <div class="stat-card"><div class="stat-value" id="card-tokens">0</div><div class="stat-label">Est. tokens wasted</div></div>
+    <div class="stat-card"><div class="stat-value" id="card-honeytokens">0</div><div class="stat-label">Honeytokens reused</div></div>
+    <div class="stat-card"><div class="stat-value" id="card-intel">0</div><div class="stat-label">Intel captures</div></div>
+</div>
+
+<div class="report-charts">
+    <div class="panel">
+        <div class="panel-header"><h3>Events by technique</h3></div>
+        <div class="panel-body"><div class="chart-host" id="chart-technique"></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h3>Events timeline</h3></div>
+        <div class="panel-body"><div class="chart-host" id="chart-timeline"></div></div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><h3>Export</h3></div>
     <div class="panel-body">
         <div class="form-inline">
             <select class="form-control form-control-sm" id="report-format" style="max-width:140px;">
@@ -21,19 +60,13 @@
             <input class="form-control form-control-sm" id="report-hours" type="number" min="0" placeholder="last N hours (blank = all)" style="max-width:220px;">
             <button class="btn btn-primary btn-sm" id="generate-btn">Generate</button>
         </div>
-    </div>
-</div>
-
-<div id="results-section" style="display:none;">
-    <div class="panel">
-        <div class="panel-header">
-            <h3>Report</h3>
-            <div class="form-inline">
+        <div id="export-result" style="display:none; margin-top:16px;">
+            <div class="form-inline" style="margin-bottom:8px;">
                 <button class="btn btn-sm" id="copy-btn">&#9112; Copy</button>
                 <button class="btn btn-sm" id="download-btn">Download</button>
             </div>
+            <pre class="output-block" id="report-output"></pre>
         </div>
-        <div class="panel-body"><pre class="output-block" id="report-output"></pre></div>
     </div>
 </div>
 
@@ -44,5 +77,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/multiselect.js') }}"></script>
 <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
 {% endblock %}

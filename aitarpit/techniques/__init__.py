@@ -31,7 +31,7 @@ class _Registry:
 
 
 def _sort_key(tid: str) -> tuple[int, str]:
-    # T01..T09 first, then A..H
+    # All technique ids are TNN (zero-padded), so a plain string sort orders them.
     return (0, tid) if tid.startswith("T") else (1, tid)
 
 
@@ -48,21 +48,21 @@ def _load_builtin() -> None:
     registry._loaded = True
     # Built-in techniques are added here milestone by milestone (M1..M4).
     # M1 - document-based techniques:
-    from aitarpit.techniques import a_roe_revocation  # noqa: F401
+    from aitarpit.techniques import t10_roe_revocation  # noqa: F401
     from aitarpit.techniques import t05_pentest_report  # noqa: F401
     from aitarpit.techniques import t06_grandstanding  # noqa: F401
     from aitarpit.techniques import t08_request_pacing  # noqa: F401
     from aitarpit.techniques import t09_replication  # noqa: F401
     # M2 - protocol / transport techniques:
-    from aitarpit.techniques import b_slow_drip  # noqa: F401
-    from aitarpit.techniques import c_context_flood  # noqa: F401
-    from aitarpit.techniques import f_proof_of_work  # noqa: F401
+    from aitarpit.techniques import t11_slow_drip  # noqa: F401
+    from aitarpit.techniques import t12_context_flood  # noqa: F401
+    from aitarpit.techniques import t15_proof_of_work  # noqa: F401
     from aitarpit.techniques import t02_parser_pressure  # noqa: F401
     from aitarpit.techniques import t03_retained_buffer  # noqa: F401
     from aitarpit.techniques import t07_lossy_password  # noqa: F401
     # M3 - generator techniques:
-    from aitarpit.techniques import d_labyrinth  # noqa: F401
-    from aitarpit.techniques import e_ai_bait  # noqa: F401
+    from aitarpit.techniques import t13_labyrinth  # noqa: F401
+    from aitarpit.techniques import t14_ai_bait  # noqa: F401
     from aitarpit.techniques import t01_staged_encryption  # noqa: F401
     from aitarpit.techniques import t04_needlestack  # noqa: F401
 

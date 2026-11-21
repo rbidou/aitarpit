@@ -23,23 +23,20 @@ function renderSessions() {
     const rows = allSessions.filter(s => !cls || s.classification === cls);
     const body = document.getElementById('sessions-body');
     if (!rows.length) {
-        body.innerHTML = '<tr><td colspan="8" class="text-muted">No sessions</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" class="text-muted">No sessions</td></tr>';
         return;
     }
     body.innerHTML = rows.map(s => `<tr class="clickable" data-id="${escapeHtml(s.id)}">
         <td><span class="tech-id">${escapeHtml(s.id)}</span></td>
         <td>${escapeHtml(s.src_ip)}</td>
-        <td><span class="tag ${CLASS_BADGE[s.classification] || 'badge-neutral'}">${escapeHtml(s.classification)}</span></td>
+        <td><span class="tag ${CLASS_BADGE[s.classification] || 'badge-neutral'}">${escapeHtml(CLASS_LABEL[s.classification] || s.classification)}</span></td>
         <td>${Math.round(s.score)}</td>
         <td>${s.requests}</td>
         <td>${Math.round(s.held_seconds)}s</td>
         <td>${escapeHtml((s.techniques || []).join(', ') || '-')}</td>
-        <td><button class="btn btn-sm copy-btn" data-value="${escapeHtml(s.id)}" title="Copy">&#9112;</button></td>
     </tr>`).join('');
     body.querySelectorAll('tr.clickable').forEach(tr =>
-        tr.addEventListener('click', e => { if (!e.target.closest('.copy-btn')) loadDetail(tr.dataset.id); }));
-    body.querySelectorAll('.copy-btn').forEach(btn =>
-        btn.addEventListener('click', () => copyToClipboard(btn.dataset.value)));
+        tr.addEventListener('click', () => loadDetail(tr.dataset.id)));
 }
 
 /**
@@ -58,7 +55,7 @@ async function loadDetail(sid) {
     const data = d.session.data || {};
     const linked = (data.linked_sessions || []).join(', ');
     document.getElementById('detail-summary').innerHTML =
-        `<span class="tag ${CLASS_BADGE[d.session.classification] || 'badge-neutral'}">${escapeHtml(d.session.classification)}</span> `
+        `<span class="tag ${CLASS_BADGE[d.session.classification] || 'badge-neutral'}">${escapeHtml(CLASS_LABEL[d.session.classification] || d.session.classification)}</span> `
         + `score ${Math.round(d.session.score)} &middot; ${d.session.requests} requests &middot; `
         + `${Math.round(d.session.held_seconds)}s held &middot; UA: <code>${escapeHtml(d.session.user_agent || '')}</code>`
         + (linked ? ` &middot; linked: <code>${escapeHtml(linked)}</code>` : '');

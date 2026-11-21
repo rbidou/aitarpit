@@ -88,6 +88,10 @@ def create_admin_app(ctx, token: str) -> Flask:
         The Flask app serving the admin surface.
     """
     app = Flask("aitarpit.admin")
+    # Loopback admin UI: never cache templates or static assets, so edits to the
+    # pages/CSS/JS show up on a plain reload without restarting the server.
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     app.config["TARPIT_CTX"] = ctx
     engine = AdminEngine(ctx)
     app.config["TARPIT_ENGINE"] = engine
@@ -151,6 +155,41 @@ def create_admin_app(ctx, token: str) -> Flask:
             The API envelope.
         """
         return _engine_response(engine.events(dict(request.args)))
+
+    @app.get("/api/admin/database")
+    def api_admin_database() -> Any:
+        """Database size and per-element row counts.
+
+        Returns:
+            The API envelope with the database metrics.
+        """
+        return _engine_response(engine.database(dict(request.args)))
+
+    @app.post("/api/admin/database/delete")
+    @check_json_data
+    def api_admin_database_delete(json_data: dict) -> Any:
+        """Delete stored elements of one type older than a cutoff timestamp.
+
+        Args:
+            json_data: 'element' and 'cutoff' (epoch seconds).
+
+        Returns:
+            The API envelope with the per-table delete counts.
+        """
+        return _engine_response(engine.database_delete(json_data))
+
+    @app.post("/api/admin/database/reset")
+    @check_json_data
+    def api_admin_database_reset(json_data: dict) -> Any:
+        """Delete every stored record (keeps the schema).
+
+        Args:
+            json_data: Unused.
+
+        Returns:
+            The API envelope with the per-element delete counts.
+        """
+        return _engine_response(engine.database_reset(json_data))
 
     @app.get("/api/admin/config")
     def api_admin_config_get() -> Any:
@@ -279,5 +318,14 @@ def create_admin_app(ctx, token: str) -> Flask:
             The rendered page.
         """
         return _page("reports")
+
+    @app.get("/admin/database")
+    def admin_database() -> Any:
+        """Serve the database page.
+
+        Returns:
+            The rendered page.
+        """
+        return _page("database")
 
     return app

@@ -210,6 +210,13 @@ def serve(ctx, with_admin: bool = True, stop_event: threading.Event | None = Non
                 ctx.sessions.expire()
                 for technique in ctx.techniques.values():
                     technique.tick()
+                st = cfg["storage"]
+                if st.get("prune_enabled"):
+                    days = st.get("prune_after_days", 7)
+                    removed = ctx.store.prune(days)
+                    if removed["events"] or removed["sessions"]:
+                        ctx.bus.emit(SYSTEM, Severity.INFO, f"Retention: removed {removed['events']} events and "
+                                     f"{removed['sessions']} sessions older than {days} days")
     finally:
         for listener in listeners:
             listener.stop()

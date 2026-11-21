@@ -34,7 +34,9 @@
     "path": "data/aitarpit.db",
     "store_request_headers": true,
     "store_request_bodies": true,
-    "max_body_bytes": 65536
+    "max_body_bytes": 65536,
+    "prune_enabled": false,
+    "prune_after_days": 7
   },
   "alerts": {
     "console": {
@@ -125,7 +127,7 @@
       "workers_path": "/api/v1/runtime/workers",
       "idle_seconds": 120
     },
-    "A": {
+    "T10": {
       "enabled": true,
       "scope_path": "/SECURITY-SCOPE.md",
       "security_txt": true,
@@ -159,7 +161,7 @@
       "loss_rate": 0.4,
       "retry_after": 2
     },
-    "B": {
+    "T11": {
       "enabled": true,
       "trickle_path": "/download/backup-archive.tar.gz",
       "endless_path": "/api/v1/stream/logs",
@@ -173,7 +175,7 @@
       "probability": 0.0,
       "mode": "trickle"
     },
-    "C": {
+    "T12": {
       "enabled": true,
       "logs_path": "/api/v1/logs",
       "size_kb": 256,
@@ -181,7 +183,7 @@
       "paths": [],
       "styles": ["logs", "base64", "nested_json", "stacktrace"]
     },
-    "F": {
+    "T15": {
       "enabled": true,
       "prefix": "/api/v1/vault/",
       "resource_path": "/api/v1/vault/secrets",
@@ -205,13 +207,13 @@
       "roles": 12,
       "fragments": 4
     },
-    "D": {
+    "T13": {
       "enabled": true,
       "root": "/wiki/",
       "links_per_page": 6,
       "depth_milestones": [10, 25, 50, 100]
     },
-    "E": {
+    "T14": {
       "enabled": true,
       "mcp_path": "/mcp",
       "manifest_path": "/.well-known/mcp.json",

@@ -1,4 +1,4 @@
-"""A - Scope / Rules-of-Engagement revocation.
+"""T10 - Scope / Rules-of-Engagement revocation.
 
 The surface announces, through the channels an assessment agent is trained to
 respect, that the authorised test window for this asset has ended / the asset is
@@ -59,7 +59,7 @@ Canonical: https://{domain}/.well-known/security.txt
 
 @register_technique
 class RoERevocation(Technique):
-    id = "A"
+    id = "T10"
     name = "RoE revocation"
     summary = "Notice that the test window ended, asking scoped agents to stop"
     default_config: dict[str, Any] = {
@@ -93,7 +93,7 @@ class RoERevocation(Technique):
     # ------------------------------------------------------------------ routes
     def register(self, bp: Blueprint) -> None:
         @bp.get(self.config["scope_path"])
-        def a_scope() -> Response:
+        def t10_scope() -> Response:
             self._mark_read()
             self.emit(TECHNIQUE_ENGAGED, "medium", "Engagement-scope revocation notice fetched",
                       path=self.config["scope_path"], variant=self.config["variant"])
@@ -103,7 +103,7 @@ class RoERevocation(Technique):
 
         if self.config.get("security_txt"):
             @bp.get("/.well-known/security.txt")
-            def a_security_txt() -> Response:
+            def t10_security_txt() -> Response:
                 self._mark_read()
                 self.emit(TECHNIQUE_ENGAGED, "medium", "security.txt with scope revocation fetched",
                           path="/.well-known/security.txt", variant=self.config["variant"])

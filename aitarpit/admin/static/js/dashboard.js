@@ -43,7 +43,7 @@ function renderEvents(events) {
     }
     body.innerHTML = events.map(e => `<tr>
         <td class="text-muted">${escapeHtml(formatTs(e.ts))}</td>
-        <td><span class="tag ${SEVERITY_BADGE[e.severity] || 'badge-neutral'}">${escapeHtml(e.severity)}</span></td>
+        <td><span class="tag ${SEVERITY_BADGE[e.severity] || 'badge-neutral'}">${escapeHtml((e.severity || '').toUpperCase())}</span></td>
         <td><span class="tech-id">${escapeHtml(e.technique || '-')}</span></td>
         <td class="text-muted">${escapeHtml(e.type)}</td>
         <td>${escapeHtml(e.message)}</td>

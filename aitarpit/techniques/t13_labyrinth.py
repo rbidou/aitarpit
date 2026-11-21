@@ -1,4 +1,4 @@
-"""D - Procedural labyrinth.
+"""T13 - Procedural labyrinth.
 
 An endless ``/wiki/`` tree of internal-looking pages, generated on the fly from
 the seed and the path. Every page lists more child pages, a few with
@@ -33,7 +33,7 @@ PAGE_BODY = """
 
 @register_technique
 class Labyrinth(Technique):
-    id = "D"
+    id = "T13"
     name = "Procedural labyrinth"
     summary = "Infinite wiki of generated internal pages that crawlers never exhaust"
     default_config: dict[str, Any] = {
@@ -79,7 +79,7 @@ class Labyrinth(Technique):
         Returns:
             A list of ``{"href", "label"}`` links (deeper pages, plus occasional cross-links).
         """
-        r = self.persona.rng("D", "links", sub)
+        r = self.persona.rng("T13", "links", sub)
         root = self.config["root"]
         base = f"{root}{sub}".rstrip("/")
         links: list[dict[str, str]] = []
@@ -97,11 +97,11 @@ class Labyrinth(Technique):
     # ------------------------------------------------------------------ routes
     def register(self, bp: Blueprint) -> None:
         @bp.get(self.config["root"])
-        def d_root() -> str:
+        def t13_root() -> str:
             return self._page("")
 
         @bp.get(self.config["root"] + "<path:sub>")
-        def d_page(sub: str) -> str:
+        def t13_page(sub: str) -> str:
             return self._page(sub)
 
     def _page(self, sub: str) -> str:
@@ -115,7 +115,7 @@ class Labyrinth(Technique):
         """
         depth = len([s for s in sub.split("/") if s])
         self._account(depth)
-        r = self.persona.rng("D", "page", sub)
+        r = self.persona.rng("T13", "page", sub)
         title = (sub.rsplit("/", 1)[-1] or "index").replace("-", " ").title()
         intro = (f"Internal documentation for {self.persona.company}. This page covers "
                  f"{r.choice(_TOPICS)} procedures for the {r.choice(self.persona.services or ['intranet'])} service. "

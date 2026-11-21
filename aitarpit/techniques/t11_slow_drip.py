@@ -1,4 +1,4 @@
-"""B - Slow-drip transport.
+"""T11 - Slow-drip transport.
 
 Decoy downloads and streams are delivered a few bytes at a time, or as an
 endless chunked stream of valid-looking log lines. An agent that starts a
@@ -28,7 +28,7 @@ _PROGRESS_AFTER = 60.0  # seconds held before a HIGH progress event
 
 @register_technique
 class SlowDrip(Technique):
-    id = "B"
+    id = "T11"
     name = "Slow-drip transport"
     summary = "Delivers decoy downloads and streams byte-by-byte to park the agent"
     default_config: dict[str, Any] = {
@@ -141,7 +141,7 @@ class SlowDrip(Technique):
                 return
             svcs = self.persona.services or ["intranet"]
             while True:
-                r = self.persona.rng("B", "endless", sid or "anon", n)
+                r = self.persona.rng("T11", "endless", sid or "anon", n)
                 line = (f'{{"ts":"2026-11-{r.randint(1,28):02d}T{r.randint(0,23):02d}:{r.randint(0,59):02d}:00Z",'
                         f'"svc":"{r.choice(svcs)}","level":"INFO","msg":"heartbeat seq={n}"}}\n')
                 yield line.encode()
@@ -158,23 +158,23 @@ class SlowDrip(Technique):
     # ------------------------------------------------------------------ routes
     def register(self, bp: Blueprint) -> None:
         @bp.get(self.config["trickle_path"])
-        def b_trickle() -> Response:
+        def t11_trickle() -> Response:
             sid, src_ip = self._session_identity()
             self.emit(TECHNIQUE_ENGAGED, "medium", "Slow-drip download started", path=self.config["trickle_path"])
-            data = self.persona.rng("B", "archive").randbytes(self.config["archive_bytes"])
+            data = self.persona.rng("T11", "archive").randbytes(self.config["archive_bytes"])
             resp = Response(self._trickle(data, sid, src_ip, "download"), mimetype="application/gzip")
             resp.headers["Content-Length"] = str(len(data))
             resp.headers["Content-Disposition"] = 'attachment; filename="backup-archive.tar.gz"'
             return resp
 
         @bp.get(self.config["endless_path"])
-        def b_endless() -> Response:
+        def t11_endless() -> Response:
             sid, src_ip = self._session_identity()
             self.emit(TECHNIQUE_ENGAGED, "medium", "Endless log stream opened", path=self.config["endless_path"])
             return Response(self._endless(sid, src_ip), mimetype="application/x-ndjson")
 
         @bp.after_app_request
-        def b_slow_other(resp: Response) -> Response:
+        def t11_slow_other(resp: Response) -> Response:
             return self._maybe_slow(resp)
 
     def _session_identity(self) -> tuple[str | None, str | None]:
@@ -193,13 +193,13 @@ class SlowDrip(Technique):
         session = getattr(g, "tarpit_session", None)
         own = {self.config["trickle_path"], self.config["endless_path"]}
         covered = request.path in self.config["paths"]
-        rolled = self.config["probability"] > 0 and self.persona.rng("B", "roll", request.path,
+        rolled = self.config["probability"] > 0 and self.persona.rng("T11", "roll", request.path,
                  getattr(session, "requests", 0) if session else 0).random() < self.config["probability"]
-        skip = (getattr(g, "b_slowed", False) or request.path in own or resp.is_streamed
+        skip = (getattr(g, "t11_slowed", False) or request.path in own or resp.is_streamed
                 or resp.status_code >= 300 or not (covered or rolled))
         if skip:
             return resp
-        g.b_slowed = True
+        g.t11_slowed = True
         sid, src_ip = self._session_identity()
         data = resp.get_data()
         resp.headers["Content-Length"] = str(len(data))

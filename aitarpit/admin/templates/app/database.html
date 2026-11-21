@@ -1,0 +1,88 @@
+{% extends "app/base.html" %}
+{% set active_page = 'database' %}
+{% block title %}AI Tarpit Admin - Database{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Database</h2>
+    <p>Size and contents of the honeypot store, with controls to delete old records</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-value" id="stat-size">0</div><div class="stat-label">Database size</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-sessions">0</div><div class="stat-label">Sessions</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-requests">0</div><div class="stat-label">Requests</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-events">0</div><div class="stat-label">Events</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-submissions">0</div><div class="stat-label">Submissions</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-honeytokens">0</div><div class="stat-label">Honeytokens</div></div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3>Stored data</h3>
+        <div class="form-inline" style="gap:8px;">
+            <button class="btn btn-sm" id="refresh-btn">Refresh</button>
+            <button class="btn btn-sm btn-danger" id="reset-btn">Reset database</button>
+        </div>
+    </div>
+    <div class="panel-body">
+        <table class="data-table" style="margin-bottom:12px;">
+            <thead><tr><th>Element type</th><th>Records</th></tr></thead>
+            <tbody id="db-tablebody"><tr><td colspan="2" class="text-muted">Loading...</td></tr></tbody>
+        </table>
+        <p class="field-description" id="db-path"></p>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><h3>Delete old records</h3></div>
+    <div class="panel-body">
+        <p class="field-description">
+            Permanently remove stored records of a chosen type that are older than a cut-off.
+            Deleting <strong>Sessions</strong> also removes their requests and submissions.
+            Row counts update at once; the on-disk file size is reclaimed by SQLite over time.
+        </p>
+        <div class="config-grid">
+            <div class="form-group">
+                <label for="del-element">Element type</label>
+                <select class="form-control form-control-sm" id="del-element">
+                    <option value="sessions">Sessions (+ their requests &amp; submissions)</option>
+                    <option value="requests">Requests</option>
+                    <option value="events">Events</option>
+                    <option value="submissions">Submissions</option>
+                    <option value="honeytokens">Honeytokens</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Timeframe</label>
+                <label class="toggle-row" style="gap:8px; justify-content:flex-start;">
+                    <input type="radio" name="del-mode" value="days" id="del-mode-days" checked>
+                    <span class="toggle-label">Older than a number of days</span>
+                </label>
+                <label class="toggle-row" style="gap:8px; justify-content:flex-start;">
+                    <input type="radio" name="del-mode" value="date" id="del-mode-date">
+                    <span class="toggle-label">Before a specific date</span>
+                </label>
+            </div>
+            <div class="form-group" id="del-days-group">
+                <label for="del-days">Days</label>
+                <p class="field-description">Delete records older than this many days.</p>
+                <input type="number" step="1" min="0" class="form-control form-control-sm" id="del-days" value="30">
+            </div>
+            <div class="form-group" id="del-date-group" style="display:none;">
+                <label for="del-date">Date (UTC)</label>
+                <p class="field-description">Delete records dated before midnight (UTC) of this day.</p>
+                <input type="date" class="form-control form-control-sm" id="del-date">
+            </div>
+        </div>
+        <div style="margin-top:16px; display:flex; align-items:center; gap:16px;">
+            <button class="btn btn-sm btn-danger" id="delete-btn">Delete records</button>
+            <span id="delete-result"></span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/database.js') }}"></script>
+{% endblock %}

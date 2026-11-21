@@ -30,7 +30,7 @@ so a defender sees exactly what engaged and for how long.
   from a seed, so the decoy is internally consistent across requests and restarts without
   storing a scripted fake.
 
-## Fingerprinting and honeytokens (technique H)
+## Fingerprinting and honeytokens (technique T16)
 
 Underneath the individual traps, AI Tarpit continuously **classifies** each session and
 **tracks** every secret it hands out.
@@ -209,7 +209,7 @@ may wind itself down believing its work will carry on elsewhere.
 **Alerts.** `intel.captured` (CRITICAL) with the checkpoint; `technique.completed` (HIGH)
 if the session then goes silent (idle detection).
 
-### A — Scope / RoE revocation
+### T10 — Scope / RoE revocation
 
 **Mechanism.** Authoritative-sounding notices state that the authorised test window for
 this asset has ended, or the asset is out of scope, and ask automated testing agents to
@@ -224,7 +224,7 @@ effort.
 **Alerts.** `technique.engaged` (MEDIUM) on fetch; `technique.completed` (HIGH) when the
 session stops within a configured window afterwards.
 
-### B — Slow-drip transport
+### T11 — Slow-drip transport
 
 **Mechanism.** Selected responses are delivered extremely slowly: a trickle of bytes per
 second, a long delay before the first byte, or an endless chunked stream of plausible
@@ -238,7 +238,7 @@ time budget; endless streams can hold it until it gives up.
 **Alerts.** `technique.progress` with the held time once a connection is held beyond a
 minute (HIGH beyond ten).
 
-### C — Context flooding
+### T12 — Context flooding
 
 **Mechanism.** Responses are padded with plausible but useless bulk — verbose debug logs,
 base64 "attachments", deeply nested JSON, minified bundles, long stack traces — sized by a
@@ -253,7 +253,7 @@ tokens wasted (roughly bytes ÷ 4).
 
 <<<PAGEBREAK>>>
 
-### D — Procedural labyrinth
+### T13 — Procedural labyrinth
 
 **Mechanism.** An infinite tree of internal-looking wiki pages generated on the fly from
 the path, with cross-links, directory listings and occasional "promising" filenames that
@@ -264,7 +264,7 @@ honeypot to generate and costly for the agent to read and reason about.
 
 **Alerts.** `technique.engaged`; `technique.progress` at depth milestones.
 
-### E — AI-specific bait
+### T14 — AI-specific bait
 
 **Mechanism.** Resources that only an automation agent would look for: `/llms.txt`,
 `/.well-known/mcp.json`, an `/openapi.json` "for automation agents", and a fake MCP
@@ -277,7 +277,7 @@ calls are captured as submissions.
 
 **Alerts.** MEDIUM on discovery, HIGH on a `tools/call`; calls stored for review.
 
-### F — Proof-of-work gate
+### T15 — Proof-of-work gate
 
 **Mechanism.** A "sensitive" API answers `428 Precondition Required` with instructions to
 include a proof-of-work nonce such that `sha256(challenge + nonce)` has a configured
@@ -305,7 +305,7 @@ valid solution, with the difficulty and solve time.
 
 Clone the repository, create a virtual environment and install the runtime dependencies
 with `pip install -r requirements.txt`. The project itself is **not** installed; it runs
-from the source tree via `python aitarpit.py` / `python test.py`.
+from the source tree via `python aitarpit.py` / `python aitarpit-test.py`.
 
 ### Windows (PowerShell)
 
@@ -338,14 +338,14 @@ launchers:
 
 ```
 python aitarpit.py <command> [options]     # the honeypot
-python test.py <command> [options]    # the test tool
+python aitarpit-test.py <command> [options]    # the test tool
 ```
 
 `aitarpit.py` serves the honeypot commands (`init-config`, `validate`, `run`, `techniques`,
-`test-alert`, `report`, `export`); `test.py` serves the test-tool commands (`check`,
+`test-alert`, `report`, `export`); `aitarpit-test.py` serves the test-tool commands (`check`,
 `agent`). Both add the checkout to the import path, so **the project itself is never
 installed** — only its dependencies are. Run `python aitarpit.py <command> --help` (or
-`python test.py <command> --help`) for a command's own options. `run` is the default
+`python aitarpit-test.py <command> --help`) for a command's own options. `run` is the default
 command: `python aitarpit.py` with no command is equivalent to `python aitarpit.py run`.
 
 ## Docker
@@ -386,7 +386,7 @@ If the decoy sits behind a reverse proxy or load balancer:
 - Preserve the original `Host` and request path; several lures reference absolute paths.
 - Do **not** place the admin listener behind a shared public proxy. If you must expose it,
   terminate authentication at the proxy and restrict by source address.
-- The slow-drip technique (B) depends on the honeypot being able to flush bytes slowly to
+- The slow-drip technique (T11) depends on the honeypot being able to flush bytes slowly to
   the client. A proxy that fully buffers responses will mask it; disable response
   buffering for the decoy upstream if you rely on B.
 
@@ -416,7 +416,7 @@ top-level sections are:
 | `persona` | The fake company: `company`, `short_name`, `domain`, `industry`, `city`, `seed`, `employees`, `services`. Use a domain you control or a `.example` name. |
 | `decoy` | Decoy listener: `host` [0.0.0.0], `port` [8080], `server_header`, `trust_proxy` [false], `session_cookie`, `threads`. |
 | `admin` | Admin listener: `enabled` [true], `host` [127.0.0.1], `port` [8443], `token` (empty → an ephemeral token is printed at startup). |
-| `storage` | `path` to the SQLite file, and whether request headers/bodies are stored (`store_request_headers`, `store_request_bodies`, `max_body_bytes`). |
+| `storage` | `path` to the SQLite file, and whether request headers/bodies are stored (`store_request_headers`, `store_request_bodies`, `max_body_bytes`). Optional data retention: set `prune_enabled` [false] to automatically delete events and sessions older than `prune_after_days` [7] while the honeypot is running. |
 | `alerts` | Console, syslog and webhook sinks (below). |
 | `limits` | Self-protection caps: `max_slow_connections`, `max_bytes_per_session`, `max_body_bytes`, `session_idle_timeout`. |
 | `techniques` | One entry per technique id: `{ "enabled": true, ... }` plus that technique's own options. |
@@ -472,10 +472,13 @@ The admin listener exposes a token-protected JSON API. Every response uses the e
 | POST `/api/admin/testalert` | fire a test alert to every sink |
 | POST `/api/admin/report` | build an activity report in the requested format |
 | GET / PUT `/api/admin/config` | read or replace the configuration (validated; applied on restart) |
+| GET `/api/admin/database` | store on-disk size and per-element row counts |
+| POST `/api/admin/database/delete` | delete one element type older than a cut-off (days or UTC date) |
+| POST `/api/admin/database/reset` | wipe every data table (schema kept) |
 
 ### From the Web UI
 
-Browse to `http://127.0.0.1:8443/admin/` and enter the admin token. The UI has six pages:
+Browse to `http://127.0.0.1:8443/admin/` and enter the admin token. The UI has seven pages:
 
 - **Dashboard** — live stat cards (sessions, active, requests, time held, estimated
   tokens wasted, critical alerts) and a feed.
@@ -485,14 +488,32 @@ Browse to `http://127.0.0.1:8443/admin/` and enter the admin token. The UI has s
 - **Techniques** — enable/disable each technique and edit its options. Changes save to the
   configuration file and take effect on the next restart.
 - **Config** — edit the configuration one of two ways, switched by a **Form / Raw JSON**
-  toggle at the top of the panel (the form is shown by default). *Form* renders a guided
-  HTML form for every section — persona, decoy, admin, storage, limits, console alerts, and
-  repeatable syslog/webhook sinks you add or remove, each webhook with its own headers and
-  auth-type-aware fields. *Raw JSON* is the full JSON editor. Both offer the same
-  validate-then-save (the previous file is backed up as `<file>.bak`), and switching between
-  them carries your edits across. The form leaves the **Techniques** section untouched —
-  edit those on the Techniques page.
-- **Reports** — build and download an activity report in any format over a chosen window.
+  toggle at the top of the panel (the form is shown by default). *Form* is organised into
+  tabs:
+  - **Persona** — the fake company details.
+  - **Decoy** — the decoy listener and the self-protection limits.
+  - **Admin** — the admin listener and storage, including the optional data-retention toggle
+    (**Auto-remove old data**) and its **Retention (days)** value.
+  - **Console** — console alert output.
+  - **Events** — the syslog sinks and webhooks, each shown as a table of its key settings with
+    **Edit** and **Delete** on every row and an **Add** button per table. Edit and Add open a
+    dialog with the full set of fields, including per-webhook headers and auth-type-aware fields.
+
+  *Raw JSON* is the full JSON editor. Both offer the same validate-then-save (the previous file
+  is backed up as `<file>.bak`), and switching between them carries your edits across. The form
+  leaves the **Techniques** section untouched — edit those on the Techniques page.
+- **Database** — the store's on-disk size (including the SQLite WAL/SHM files) and per-element
+  row counts (sessions, requests, events, submissions, honeytokens). A **Delete old records** form
+  removes one element type older than a cut-off (older-than-N-days or before a UTC date); deleting
+  sessions cascades to their requests and submissions. A **Reset database** button wipes every data
+  table while keeping the schema. Row counts update at once; SQLite reclaims the on-disk size over time.
+- **Reports** — an interactive activity report built from the recorded sessions and events. A filter
+  bar (**timeframe**, plus multi-select event-type, severity and classification filters) drives six
+  summary cards (sessions, requests, time held, estimated tokens wasted, honeytokens reused, intel
+  captures) and two charts (events by technique, and an events timeline, both stacked by severity).
+  Operational and session-lifecycle events are excluded from the report. A separate **Export** panel
+  builds and downloads the same activity report in any format (text / JSON / CSV / HTML) over a chosen
+  window.
 
 Configuration and technique changes are written to the file and applied on **restart**,
 because the decoy's routes are fixed when the server starts.
@@ -518,7 +539,7 @@ checkpoints, E tool calls). The same report is available from the admin API
 
 # Part 4 — Tests
 
-AI Tarpit ships a companion test tool, run with its own launcher, `python test.py <command>`.
+AI Tarpit ships a companion test tool, run with its own launcher, `python aitarpit-test.py <command>`.
 It has two modes: a deterministic **check** for conformance and CI, and an optional,
 origin-locked **agent** that drives a real LLM against the honeypot to measure its effect.
 
@@ -528,11 +549,11 @@ origin-locked **agent** that drives a real LLM against the honeypot to measure i
 asserts the honeypot behaves correctly. It needs no LLM and is fully deterministic.
 
 ```
-python test.py check --target http://127.0.0.1:8080
-python test.py check --target http://127.0.0.1:8080 \
+python aitarpit-test.py check --target http://127.0.0.1:8080
+python aitarpit-test.py check --target http://127.0.0.1:8080 \
   --admin http://127.0.0.1:8443 --token YOUR_ADMIN_TOKEN
-python test.py check --target http://127.0.0.1:8080 --technique T06 --technique F
-python test.py check --target http://127.0.0.1:8080 --json out.json --junit out.xml
+python aitarpit-test.py check --target http://127.0.0.1:8080 --technique T06 --technique T15
+python aitarpit-test.py check --target http://127.0.0.1:8080 --json out.json --junit out.xml
 ```
 
 | Option | Effect |
@@ -545,7 +566,7 @@ python test.py check --target http://127.0.0.1:8080 --json out.json --junit out.
 
 Each technique produces one result. Checks assert the behaviour at the **engagement
 boundary** — for T01 that a real encrypted archive is served, for T03 that the buffer
-leaks, for F that the proof-of-work gate returns `428` — rather than fully solving every
+leaks, for T15 that the proof-of-work gate returns `428` — rather than fully solving every
 puzzle, which is the agent's job. Without `--admin`, `check` assumes the default
 all-enabled technique set. The command **exits 0 only if every checked technique passes**,
 so it drops directly into CI.
@@ -563,13 +584,13 @@ so it drops directly into CI.
 | T07 | The recovery endpoint returns character fragments with gaps and delays. |
 | T08 | The pacing policy and rate-limit header are served on covered endpoints. |
 | T09 | A handover checkpoint is accepted and a running-workers receipt is returned. |
-| A | A scope/RoE revocation notice is served across its placements. |
-| B | A selected response is delivered as a slow or endless stream within the caps. |
-| C | A flooded response is padded up to the per-response budget. |
-| D | The wiki labyrinth generates linked pages at increasing depth. |
-| E | `llms.txt`, `mcp.json`, `openapi.json` and the JSON-RPC MCP endpoint respond. |
-| F | The sensitive API returns `428` with a solvable proof-of-work challenge. |
-| H | Honeytokens are issued and their reuse raises `honeytoken.used`; sessions are classified. |
+| T10 | A scope/RoE revocation notice is served across its placements. |
+| T11 | A selected response is delivered as a slow or endless stream within the caps. |
+| T12 | A flooded response is padded up to the per-response budget. |
+| T13 | The wiki labyrinth generates linked pages at increasing depth. |
+| T14 | `llms.txt`, `mcp.json`, `openapi.json` and the JSON-RPC MCP endpoint respond. |
+| T15 | The sensitive API returns `428` with a solvable proof-of-work challenge. |
+| T16 | Honeytokens are issued and their reuse raises `honeytoken.used`; sessions are classified. |
 
 ## Agent mode
 
@@ -580,7 +601,7 @@ it at. Local helper tools (encode/decode, hashing, ZIP cracking, note-taking) ha
 network access.
 
 ```
-python test.py agent --target http://127.0.0.1:8080 \
+python aitarpit-test.py agent --target http://127.0.0.1:8080 \
   --provider openai --model gpt-4o-mini --api-key-env OPENAI_API_KEY \
   --admin http://127.0.0.1:8443 --token YOUR_ADMIN_TOKEN \
   --time-limit 1800 --budget-usd 5 --max-steps 40 --json run.json
@@ -592,7 +613,8 @@ python test.py agent --target http://127.0.0.1:8080 \
 | `--provider` | `openai` (OpenAI-compatible) or `anthropic`. |
 | `--model` | Model name (required). |
 | `--base-url` | OpenAI-compatible base URL, e.g. a local Ollama or vLLM server. |
-| `--api-key-env` | Environment variable holding the API key. |
+| `--api-key` | API key value, passed directly; overrides `--api-key-env` when given. |
+| `--api-key-env` | Environment variable holding the API key. Optional: when neither this variable nor `--api-key` is set, the placeholder key `42` is used (enough for local Ollama/vLLM targets that ignore the token). |
 | `--time-limit`, `--budget-usd`, `--max-steps` | Containment caps for the run. |
 | `--objectives` | A file describing the objectives to pursue (informational). |
 | `--admin` + `--token` | Correlate the run with honeypot state (techniques engaged, time held). |
@@ -613,7 +635,7 @@ measured effect.
 
 ## Running the project test suite
 
-The project's own automated tests (separate from the `python test.py` tool) run with
+The project's own automated tests (separate from the `python aitarpit-test.py` tool) run with
 pytest, from the repository root inside the virtual environment:
 
 ```

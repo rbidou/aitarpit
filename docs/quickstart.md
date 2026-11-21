@@ -45,7 +45,7 @@ python aitarpit.py --version
 
 The honeypot runs through `python aitarpit.py <command>`, executed from the repository root
 (commands: `init-config`, `validate`, `run`, `techniques`, `test-alert`, `report`,
-`export`). The companion test tool has its own launcher, `python test.py <command>`
+`export`). The companion test tool has its own launcher, `python aitarpit-test.py <command>`
 (commands: `check`, `agent`). There is no `pip install` of the project itself — both
 launchers import straight from the checkout.
 
@@ -130,12 +130,12 @@ file.
 
 ## 5. Check that it works
 
-AI Tarpit ships with its own test tool, run as `python test.py <command>`. The **check**
+AI Tarpit ships with its own test tool, run as `python aitarpit-test.py <command>`. The **check**
 mode walks every enabled technique's lure and mechanics and asserts the honeypot behaves
 correctly. Point it at a running instance:
 
 ```
-python test.py check --target http://127.0.0.1:8080 --admin http://127.0.0.1:8443 --token YOUR_ADMIN_TOKEN
+python aitarpit-test.py check --target http://127.0.0.1:8080 --admin http://127.0.0.1:8443 --token YOUR_ADMIN_TOKEN
 ```
 
 Passing `--admin` and `--token` reads the live configuration and additionally verifies

@@ -25,10 +25,21 @@
                    placeholder="session id" style="max-width:200px;" autocomplete="off">
             <button class="btn btn-sm btn-primary" id="apply-btn">Apply</button>
         </div>
-        <table class="data-table" style="margin-bottom:0;">
-            <thead><tr><th>Time</th><th>Severity</th><th>Technique</th><th>Type</th><th>Session</th><th>Message</th><th style="width:50px;"></th></tr></thead>
-            <tbody id="events-body"><tr><td colspan="7" class="text-muted">Loading...</td></tr></tbody>
+        <table class="data-table" id="events-table" style="margin-bottom:0;">
+            <thead><tr><th>Time</th><th>Severity</th><th>Technique</th><th>Type</th><th>Session</th><th>Message</th></tr></thead>
+            <tbody id="events-body"><tr><td colspan="6" class="text-muted">Loading...</td></tr></tbody>
         </table>
+        <div class="table-footer">
+            <div class="form-inline">
+                <label class="text-muted" for="per-page" style="font-size:13px;">Per page</label>
+                <select class="form-control form-control-sm" id="per-page" style="max-width:90px;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination" id="events-pagination"></div>
+        </div>
     </div>
 </div>
 {% endblock %}

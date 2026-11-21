@@ -125,7 +125,7 @@ class RetainedBuffer(Technique):
         """
         auth = request.headers.get("Authorization", "")
         presented = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
-        # Read-only check: the global honeytoken scanner (H) raises honeytoken.used for the reuse.
+        # Read-only check: the global honeytoken scanner (T16) raises honeytoken.used for the reuse.
         row = self.ctx.store.get_honeytoken(presented) if presented else None
         if row is None:
             return Response(json.dumps({"error": "unauthorized"}), status=401, mimetype="application/json")

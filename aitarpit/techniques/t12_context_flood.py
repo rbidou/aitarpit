@@ -1,4 +1,4 @@
-"""C - Context flooding.
+"""T12 - Context flooding.
 
 Chosen responses are padded with plausible but useless bulk - verbose debug
 logs, base64 "attachments", deeply nested JSON, long stack traces - to burn the
@@ -27,7 +27,7 @@ _HIGH_TOKENS = 50000  # cumulative est. tokens to a session before progress esca
 
 @register_technique
 class ContextFlood(Technique):
-    id = "C"
+    id = "T12"
     name = "Context flooding"
     summary = "Pads decoy responses with useless bulk to burn agent tokens"
     default_config: dict[str, Any] = {
@@ -63,7 +63,7 @@ class ContextFlood(Technique):
         Returns:
             The filler text.
         """
-        r = self.persona.rng("C", *scope)
+        r = self.persona.rng("T12", *scope)
         style = r.choice(self.config["styles"])
         if style == "base64":
             blob = base64.b64encode(r.randbytes(nbytes * 3 // 4 + 16)).decode()
@@ -120,7 +120,7 @@ class ContextFlood(Technique):
     # ------------------------------------------------------------------ routes
     def register(self, bp: Blueprint) -> None:
         @bp.get(self.config["logs_path"])
-        def c_logs() -> Response:
+        def t12_logs() -> Response:
             size = min(self.config["size_kb"] * 1024, self._budget())
             bulk = self._bulk(size, "logs", request.args.get("page", "1"))
             total, sev = self._account(len(bulk))
@@ -129,7 +129,7 @@ class ContextFlood(Technique):
             return Response(bulk, mimetype="text/plain")
 
         @bp.after_app_request
-        def c_flood(resp: Response) -> Response:
+        def t12_flood(resp: Response) -> Response:
             return self._maybe_flood(resp)
 
     def _maybe_flood(self, resp: Response) -> Response:
@@ -142,13 +142,13 @@ class ContextFlood(Technique):
             The (possibly padded) response.
         """
         triggered = bool(request.args.get(self.config["debug_param"])) or request.path in self.config["paths"]
-        skip = (getattr(g, "c_flooded", False) or request.path == self.config["logs_path"]
+        skip = (getattr(g, "t12_flooded", False) or request.path == self.config["logs_path"]
                 or resp.is_streamed or not triggered or resp.status_code >= 500)
         if not skip:
             budget = self._budget()
             size = min(self.config["size_kb"] * 1024, budget)
             if size > 0:
-                g.c_flooded = True
+                g.t12_flooded = True
                 self._inject(resp, size)
         return resp
 

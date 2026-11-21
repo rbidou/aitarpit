@@ -13,11 +13,11 @@
     --text-secondary: #8b949e;
     --text-muted:     #6e7681;
 
-    /* --- AI Tarpit accent: amber/tar, legible on #0d1117 --- */
-    --accent:       #ffb000;
-    --accent-hover: #ffc233;
-    --accent-dim:   rgba(255, 176, 0, 0.15);
-    --accent-rgb:   255, 176, 0;
+    /* --- AI Tarpit accent: blue, legible on #0d1117 --- */
+    --accent:       #308FE2;
+    --accent-hover: #5aa8ec;
+    --accent-dim:   rgba(48, 143, 226, 0.15);
+    --accent-rgb:   48, 143, 226;
 
     --danger:  #f85149;
     --warning: #d29922;
@@ -232,6 +232,40 @@ a:hover  { color: var(--accent-hover); }
 .data-table tr.clickable            { cursor: pointer; }
 .data-table tr.clickable:hover td   { background: var(--accent-dim); }
 
+/* Events table: every column stays on one line except the message cell */
+#events-table td            { white-space: nowrap; }
+#events-table td.msg-cell   { white-space: normal; }
+
+/* Click-to-filter value inside a cell */
+.filter-value {
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+}
+.filter-value:hover {
+    border-bottom-color: currentColor;
+}
+
+/* Table footer: per-page selector on the left, page navigation on the right */
+.table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination .page-info {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
 /* Monospace identifier cell — the signature "this is data" treatment */
 .tech-id {
     font-family: var(--font-mono);
@@ -387,6 +421,9 @@ select.form-control {
 }
 
 .btn:hover { background: var(--bg-hover); }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled:hover { background: var(--bg-tertiary); }
 
 .btn-primary {
     background: var(--accent);
@@ -547,6 +584,13 @@ select.form-control {
     border: 1px solid var(--text-muted);
 }
 
+/* Critical — solid red fill, to stand apart from the outlined high badge */
+.badge-critical {
+    background: var(--danger);
+    color: #fff;
+    border: 1px solid var(--danger);
+}
+
 .badge-accent {
     background: var(--accent-dim);
     color: var(--accent);
@@ -632,9 +676,89 @@ label.toggle-row { display: flex; align-items: center; gap: 12px; cursor: pointe
 .segmented .seg-btn.active { background: var(--accent-dim); color: var(--accent); }
 
 .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-.config-grid .cfg-span { grid-column: 1 / -1; }
 .cfg-group-title { font-size: 15px; color: var(--text-primary); margin: 8px 0 10px; }
 .cfg-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
 .cfg-section h4 { font-size: 14px; color: var(--text-primary); margin: 0 0 12px; }
-.sink-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-.sink-list .add-sink { grid-column: 1 / -1; justify-self: start; }
+
+/* Config tabs (underline nav) */
+.cfg-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+.cfg-tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 10px 16px; font-size: 14px; font-family: var(--font-sans); color: var(--text-secondary);
+    cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.cfg-tab:hover { color: var(--text-primary); }
+.cfg-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+/* Beat .config-grid's display:grid so a hidden panel actually hides */
+.cfg-tab-panel[hidden] { display: none; }
+
+/* Events tab: one sink table per group */
+.cfg-sink-group + .cfg-sink-group { margin-top: 24px; }
+.cfg-sink-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.cfg-sink-head .cfg-group-title { margin: 0; }
+.cfg-row-actions { display: flex; gap: 8px; justify-content: flex-end; white-space: nowrap; }
+.mono { font-family: var(--font-mono); font-size: 13px; }
+
+/* Modal (sink add/edit) */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 1100;
+    display: flex; align-items: center; justify-content: center; padding: 24px; }
+.modal-overlay[hidden] { display: none; }
+.modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+    width: 100%; max-width: 520px; max-height: calc(100vh - 48px); display: flex; flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 16px; color: var(--text-primary); margin: 0; }
+.modal-close { background: none; border: none; color: var(--text-muted); font-size: 24px; line-height: 1;
+    cursor: pointer; padding: 0 4px; transition: color 0.15s; }
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 20px; overflow-y: auto; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 20px;
+    border-top: 1px solid var(--border); }
+
+/* ---------- Techniques panel ---------- */
+.tech-grid { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+@media (min-width: 1400px) { .tech-grid { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- Reports: filter bar ---------- */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+.filter-field > label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ---------- Multi-select dropdown ---------- */
+.ms { position: relative; }
+.ms-button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    cursor: pointer; justify-content: space-between; }
+.ms-button.active { border-color: var(--accent); }
+.ms-button .ms-label { color: var(--text-secondary); }
+.ms-button .ms-count { margin-left: auto; color: var(--text-primary); font-weight: 600; }
+.ms-button .ms-caret { color: var(--text-muted); font-size: 11px; }
+.ms-popover { display: none; position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; min-width: 100%;
+    max-height: 280px; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 6px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); padding: 6px; }
+.ms-popover.open { display: block; }
+.ms-option { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px;
+    font-size: 13px; color: var(--text-primary); cursor: pointer; white-space: nowrap; }
+.ms-option:hover { background: var(--bg-tertiary); }
+.ms-option input { accent-color: var(--accent); cursor: pointer; }
+.ms-option.ms-all { font-weight: 600; }
+.ms-divider { height: 1px; background: var(--border); margin: 4px 2px; }
+
+/* ---------- Reports: chart grid (two across above 1400px) ---------- */
+.report-charts { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; margin-bottom: 24px; }
+.report-charts .panel { margin-bottom: 0; }
+@media (min-width: 1400px) { .report-charts { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- Charts (inline SVG) ---------- */
+.chart-host { width: 100%; }
+.chart-svg { display: block; width: 100%; height: auto; }
+.chart-axis { stroke: var(--border); stroke-width: 1; }
+.chart-grid { stroke: var(--border); stroke-width: 1; opacity: 0.45; }
+.chart-label { fill: var(--text-muted); font-size: 9px; font-family: var(--font-sans); }
+.chart-label-right { text-anchor: end; }
+.chart-label-mid { text-anchor: middle; }
+.chart-seg { stroke: var(--bg-secondary); stroke-width: 2; }
+.chart-area { fill-opacity: 0.85; stroke: var(--bg-secondary); stroke-width: 1; }
+.chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0 0; padding: 0; }
+.chart-legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.chart-swatch { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 12px; }
+.chart-legend-label { color: var(--text-secondary); }
+.chart-legend-value { color: var(--text-primary); font-weight: 600; font-family: var(--font-mono); }

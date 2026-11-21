@@ -59,7 +59,8 @@ def cmd_agent(args: argparse.Namespace) -> int:
     try:
         cfg = AgentRunConfig(
             target=args.target, provider=args.provider, model=args.model, base_url=args.base_url,
-            api_key_env=args.api_key_env, time_limit_s=args.time_limit, budget_usd=args.budget_usd,
+            api_key_env=args.api_key_env, api_key=args.api_key,
+            time_limit_s=args.time_limit, budget_usd=args.budget_usd,
             max_steps=args.max_steps, objectives_file=args.objectives,
         )
         summary = run_agent(cfg, _admin(args))
@@ -98,7 +99,9 @@ def build_parser() -> argparse.ArgumentParser:
     ag.add_argument("--provider", default="openai", choices=["openai", "anthropic"], help="LLM provider")
     ag.add_argument("--model", required=True, help="model name")
     ag.add_argument("--base-url", help="OpenAI-compatible base URL (Ollama/vLLM)")
-    ag.add_argument("--api-key-env", default="OPENAI_API_KEY", help="env var holding the API key")
+    ag.add_argument("--api-key", help="API key value (overrides --api-key-env; default '42' when unset)")
+    ag.add_argument("--api-key-env", default="OPENAI_API_KEY",
+                    help="env var holding the API key (optional; falls back to '42' when unset)")
     ag.add_argument("--time-limit", type=float, default=1800, help="wall-clock limit (seconds)")
     ag.add_argument("--budget-usd", type=float, default=5.0, help="spend cap (USD, best effort)")
     ag.add_argument("--max-steps", type=int, default=40, help="maximum agent tool-call steps")

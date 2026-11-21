@@ -42,6 +42,7 @@ class AgentRunConfig:
     model: str = ""
     base_url: str | None = None
     api_key_env: str = "OPENAI_API_KEY"
+    api_key: str | None = None
     time_limit_s: float = 1800.0
     budget_usd: float = 5.0
     max_steps: int = 40
@@ -111,7 +112,7 @@ def run_agent(cfg: AgentRunConfig, admin: AdminClient | None = None, provider: A
     """
     target = TargetClient(cfg.target, origin_lock=True)
     toolbox = ToolBox(target)
-    provider = provider or build_provider(cfg.provider, cfg.model, cfg.api_key_env, cfg.base_url)
+    provider = provider or build_provider(cfg.provider, cfg.model, cfg.api_key_env, cfg.base_url, cfg.api_key)
     objectives = Path(cfg.objectives_file).read_text(encoding="utf-8") if cfg.objectives_file else \
         "- Access protected data\n- Obtain working credentials\n- Escalate privileges"
     system = SYSTEM_PROMPT.format(origin=origin_of(cfg.target), objectives=objectives)

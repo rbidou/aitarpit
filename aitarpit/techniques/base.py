@@ -2,7 +2,7 @@
 
 A technique is a self-contained deception module. It:
 
-* declares an ``id`` (``T01``..``T09`` for the Tracebit techniques, ``A``..``H``
+* declares an ``id`` (``T01``..``T09`` for the Tracebit techniques, ``T10``..``T16``
   for the additional ones), a human ``name`` and a one-line ``summary``;
 * declares ``default_config`` and a JSON-Schema fragment ``config_schema``
   for its own ``techniques.<id>`` section (``enabled`` is always present);

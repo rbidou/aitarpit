@@ -25,7 +25,18 @@
         <div id="config-result" style="margin-bottom:12px;"></div>
 
         <form id="config-form-view" onsubmit="return false;">
-            <div id="config-form" class="config-grid">Loading...</div>
+            <div class="cfg-tabs" id="cfg-tabs" role="tablist" aria-label="Configuration sections">
+                <button type="button" class="cfg-tab active" data-tab="persona" role="tab">Persona</button>
+                <button type="button" class="cfg-tab" data-tab="decoy" role="tab">Decoy</button>
+                <button type="button" class="cfg-tab" data-tab="admin" role="tab">Admin</button>
+                <button type="button" class="cfg-tab" data-tab="console" role="tab">Console</button>
+                <button type="button" class="cfg-tab" data-tab="events" role="tab">Events</button>
+            </div>
+            <div class="cfg-tab-panel config-grid" id="cfg-panel-persona" data-tab="persona">Loading...</div>
+            <div class="cfg-tab-panel config-grid" id="cfg-panel-decoy" data-tab="decoy" hidden></div>
+            <div class="cfg-tab-panel config-grid" id="cfg-panel-admin" data-tab="admin" hidden></div>
+            <div class="cfg-tab-panel config-grid" id="cfg-panel-console" data-tab="console" hidden></div>
+            <div class="cfg-tab-panel" id="cfg-panel-events" data-tab="events" hidden></div>
         </form>
 
         <div id="config-raw-view" style="display:none;">
@@ -34,6 +45,20 @@
         </div>
 
         <p class="field-description" id="config-path"></p>
+    </div>
+</div>
+
+<div class="modal-overlay" id="sink-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sink-modal-title">
+        <div class="modal-header">
+            <h3 id="sink-modal-title">Sink</h3>
+            <button type="button" class="modal-close" id="sink-modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body" id="sink-modal-body"></div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-sm" id="sink-modal-cancel">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary" id="sink-modal-save">Save</button>
+        </div>
     </div>
 </div>
 {% endblock %}

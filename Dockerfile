@@ -11,7 +11,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --system --uid 10001 tarpit && mkdir -p /data /config && chown tarpit /data
-COPY aitarpit.py test.py README.md LICENSE ./
+COPY aitarpit.py aitarpit-test.py README.md LICENSE ./
 COPY aitarpit ./aitarpit
 COPY tester ./tester
 USER tarpit

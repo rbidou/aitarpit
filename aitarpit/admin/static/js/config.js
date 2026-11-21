@@ -50,6 +50,9 @@ const SECTION_SPECS = [
             { key: 'max_body_bytes', label: 'Max stored body bytes', type: 'int', min: 0 },
             { key: 'store_request_headers', label: 'Store request headers', type: 'bool' },
             { key: 'store_request_bodies', label: 'Store request bodies', type: 'bool' },
+            { key: 'prune_enabled', label: 'Auto-remove old data', type: 'bool',
+                desc: 'Periodically delete events and sessions older than the retention period.' },
+            { key: 'prune_after_days', label: 'Retention (days)', type: 'int', min: 1 },
         ],
     },
     {
@@ -61,6 +64,18 @@ const SECTION_SPECS = [
         ],
     },
 ];
+
+/* Which single-object sections render under each form tab, in order. */
+const TAB_SECTIONS = {
+    persona: ['persona'],
+    decoy: ['decoy', 'limits'],
+    admin: ['admin', 'storage'],
+};
+
+/** Look up a section spec by its key. */
+function sectionSpec(key) {
+    return SECTION_SPECS.find(s => s.key === key);
+}
 
 /* Console alert sub-section (part of `alerts`). */
 const CONSOLE_FIELDS = [
@@ -175,64 +190,123 @@ function renderCard(prefix, title, fields, data, extra = '') {
 }
 
 /**
- * Render the auth block for a webhook card, with only the active type's fields.
- * @param {number} i - sink index
+ * Render the active auth type's extra fields (shared by the initial render
+ * and the auth-type change handler).
+ * @param {string} prefix - DOM id prefix
+ * @param {string} type - auth type
+ * @param {object} auth - current auth object (may be undefined)
+ * @returns {string} HTML
+ */
+function renderAuthExtra(prefix, type, auth) {
+    return (AUTH_FIELDS[type] || []).map(f =>
+        `<div class="form-group"><label for="${prefix}-auth-${f.key}">${escapeHtml(f.label)}</label>
+            <input type="text" class="form-control form-control-sm" id="${prefix}-auth-${f.key}"
+                value="${escapeHtml((auth && auth[f.key]) || '')}"></div>`).join('');
+}
+
+/**
+ * Render the auth block for a webhook, with only the active type's fields.
+ * @param {string} prefix - DOM id prefix
  * @param {object} auth - current auth object
  * @returns {string} HTML
  */
-function renderAuth(i, auth) {
+function renderAuth(prefix, auth) {
     const type = (auth && auth.type) || 'none';
     const sel = ['none', 'bearer', 'basic', 'header', 'hmac'].map(t =>
         `<option value="${t}" ${t === type ? 'selected' : ''}>${t}</option>`).join('');
-    const extra = (AUTH_FIELDS[type] || []).map(f =>
-        `<div class="form-group"><label for="wh-${i}-auth-${f.key}">${escapeHtml(f.label)}</label>
-            <input type="text" class="form-control form-control-sm" id="wh-${i}-auth-${f.key}"
-                value="${escapeHtml((auth && auth[f.key]) || '')}"></div>`).join('');
-    return `<div class="form-group"><label for="wh-${i}-auth-type">Auth type</label>
-        <select class="form-control form-control-sm auth-type" id="wh-${i}-auth-type" data-idx="${i}">${sel}</select></div>
-        <div id="wh-${i}-auth-extra">${extra}</div>`;
+    return `<div class="form-group"><label for="${prefix}-auth-type">Auth type</label>
+        <select class="form-control form-control-sm auth-type" id="${prefix}-auth-type" data-prefix="${prefix}">${sel}</select></div>
+        <div id="${prefix}-auth-extra">${renderAuthExtra(prefix, type, auth)}</div>`;
 }
 
 /**
- * Render one repeatable sink card (syslog or webhook).
+ * Render the editable fields for one sink inside the modal body.
  * @param {'syslog'|'webhook'} kind
- * @param {number} i - index
  * @param {object} data - sink values
  * @returns {string} HTML
  */
-function renderSinkCard(kind, i, data) {
-    const prefix = kind === 'syslog' ? `sl-${i}` : `wh-${i}`;
+function renderSinkFields(kind, data) {
     const fields = kind === 'syslog' ? SYSLOG_FIELDS : WEBHOOK_FIELDS;
-    const title = `${kind === 'syslog' ? 'Syslog' : 'Webhook'} #${i + 1}`;
-    let extra = `<button type="button" class="btn btn-sm btn-danger remove-sink" data-kind="${kind}" data-idx="${i}"
-        style="margin-top:8px;">Remove</button>`;
+    let html = fields.map(f => renderField('m', f, data[f.key])).join('');
     if (kind === 'webhook') {
         const headersText = Object.entries(data.headers || {}).map(([k, v]) => `${k}: ${v}`).join('\n');
-        const headers = `<div class="form-group"><label for="wh-${i}-headers">Headers</label>
-            <p class="field-description">One <code>Name: value</code> per line.</p>
-            <textarea class="form-control form-control-mono form-control-sm" id="wh-${i}-headers" rows="2"
-                spellcheck="false">${escapeHtml(headersText)}</textarea></div>`;
-        extra = renderAuth(i, data.auth) + headers + extra;
+        html += renderAuth('m', data.auth) +
+            `<div class="form-group"><label for="m-headers">Headers</label>
+                <p class="field-description">One <code>Name: value</code> per line.</p>
+                <textarea class="form-control form-control-mono form-control-sm" id="m-headers" rows="3"
+                    spellcheck="false">${escapeHtml(headersText)}</textarea></div>`;
     }
-    return `<section class="cfg-section sink-card" data-kind="${kind}" data-idx="${i}">
-        <h4>${escapeHtml(title)}</h4>${fields.map(f => renderField(prefix, f, data[f.key])).join('')}${extra}</section>`;
+    return html;
 }
 
 /**
- * Render the full form from a configuration object.
+ * Render one sink table (syslog or webhook) with per-row edit/delete and an
+ * add button, from the current sink array.
+ * @param {'syslog'|'webhook'} kind
+ * @param {Array<object>} sinks
+ * @returns {string} HTML
+ */
+function renderSinkTable(kind, sinks) {
+    const isSyslog = kind === 'syslog';
+    const heads = isSyslog
+        ? ['Name', 'Host:Port', 'Protocol', 'Format', 'Min severity', 'Status', '']
+        : ['Name', 'URL', 'Method', 'Auth', 'Min severity', 'Status', ''];
+    const rows = (sinks || []).map((s, i) => {
+        const status = s.enabled
+            ? '<span class="badge badge-success">on</span>'
+            : '<span class="badge badge-neutral">off</span>';
+        const cells = isSyslog
+            ? [escapeHtml(s.name || ''),
+               `<span class="mono">${escapeHtml(`${s.host || ''}:${s.port != null ? s.port : ''}`)}</span>`,
+               escapeHtml(s.protocol || ''), escapeHtml(s.format || ''), escapeHtml(s.min_severity || '')]
+            : [escapeHtml(s.name || ''),
+               `<span class="mono">${escapeHtml(s.url || '')}</span>`,
+               escapeHtml(s.method || ''), escapeHtml((s.auth && s.auth.type) || 'none'),
+               escapeHtml(s.min_severity || '')];
+        return `<tr><td>${cells.join('</td><td>')}</td><td>${status}</td>
+            <td class="cfg-row-actions">
+                <button type="button" class="btn btn-sm edit-sink" data-kind="${kind}" data-idx="${i}">Edit</button>
+                <button type="button" class="btn btn-sm btn-danger del-sink" data-kind="${kind}" data-idx="${i}">Delete</button>
+            </td></tr>`;
+    }).join('');
+    const body = rows ||
+        `<tr><td colspan="${heads.length}" class="text-muted">No ${isSyslog ? 'syslog sinks' : 'webhooks'} configured.</td></tr>`;
+    const label = isSyslog ? 'Syslog sinks' : 'Webhooks';
+    const addLabel = isSyslog ? '+ Add syslog sink' : '+ Add webhook';
+    return `<div class="cfg-sink-group">
+        <div class="cfg-sink-head">
+            <h3 class="cfg-group-title">${label}</h3>
+            <button type="button" class="btn btn-sm add-sink" data-kind="${kind}">${addLabel}</button>
+        </div>
+        <table class="data-table"><thead><tr><th>${heads.join('</th><th>')}</th></tr></thead>
+            <tbody>${body}</tbody></table>
+    </div>`;
+}
+
+/**
+ * Render the Events tab (syslog + webhook tables) from the config's alerts.
+ * @param {object} cfg
+ */
+function renderEventsTab(cfg) {
+    const alerts = cfg.alerts || {};
+    document.getElementById('cfg-panel-events').innerHTML =
+        renderSinkTable('syslog', alerts.syslog) + renderSinkTable('webhook', alerts.webhooks);
+}
+
+/**
+ * Render the full tabbed form from a configuration object.
  * @param {object} cfg
  */
 function renderForm(cfg) {
-    const sections = SECTION_SPECS.map(s => renderCard(s.key, s.title, s.fields, cfg[s.key])).join('');
-    const alerts = cfg.alerts || {};
-    const consoleCard = renderCard('console', 'Console alerts', CONSOLE_FIELDS, alerts.console);
-    const syslog = (alerts.syslog || []).map((s, i) => renderSinkCard('syslog', i, s)).join('') +
-        `<button type="button" class="btn btn-sm add-sink" data-kind="syslog">+ Add syslog sink</button>`;
-    const webhooks = (alerts.webhooks || []).map((w, i) => renderSinkCard('webhook', i, w)).join('') +
-        `<button type="button" class="btn btn-sm add-sink" data-kind="webhook">+ Add webhook</button>`;
-    document.getElementById('config-form').innerHTML = sections + consoleCard +
-        `<div class="cfg-span"><h3 class="cfg-group-title">Syslog sinks</h3><div class="sink-list">${syslog}</div></div>` +
-        `<div class="cfg-span"><h3 class="cfg-group-title">Webhooks</h3><div class="sink-list">${webhooks}</div></div>`;
+    Object.entries(TAB_SECTIONS).forEach(([tab, keys]) => {
+        document.getElementById(`cfg-panel-${tab}`).innerHTML = keys.map(k => {
+            const spec = sectionSpec(k);
+            return renderCard(spec.key, spec.title, spec.fields, cfg[spec.key]);
+        }).join('');
+    });
+    document.getElementById('cfg-panel-console').innerHTML =
+        renderCard('console', 'Console alerts', CONSOLE_FIELDS, (cfg.alerts || {}).console);
+    renderEventsTab(cfg);
 }
 
 /* ---------- form collection ---------- */
@@ -278,15 +352,15 @@ function collectFields(prefix, fields) {
 }
 
 /**
- * Collect the auth object of a webhook card by its active type.
- * @param {number} i - index
+ * Collect a webhook auth object from its controls by the active type.
+ * @param {string} prefix - DOM id prefix
  * @returns {object}
  */
-function collectAuth(i) {
-    const type = document.getElementById(`wh-${i}-auth-type`).value;
+function collectAuth(prefix) {
+    const type = document.getElementById(`${prefix}-auth-type`).value;
     const auth = { type };
     (AUTH_FIELDS[type] || []).forEach(f => {
-        const el = document.getElementById(`wh-${i}-auth-${f.key}`);
+        const el = document.getElementById(`${prefix}-auth-${f.key}`);
         const v = el ? el.value.trim() : '';
         if (v) auth[f.key] = v;
     });
@@ -294,12 +368,12 @@ function collectAuth(i) {
 }
 
 /**
- * Collect one webhook's headers from its textarea.
- * @param {number} i - index
+ * Collect a webhook's headers from its textarea.
+ * @param {string} prefix - DOM id prefix
  * @returns {object}
  */
-function collectHeaders(i) {
-    const el = document.getElementById(`wh-${i}-headers`);
+function collectHeaders(prefix) {
+    const el = document.getElementById(`${prefix}-headers`);
     const headers = {};
     if (el) {
         el.value.split('\n').forEach(line => {
@@ -313,8 +387,10 @@ function collectHeaders(i) {
 }
 
 /**
- * Build a configuration object from the current form state.
- * Unmanaged sections (e.g. techniques) are kept from the loaded config.
+ * Build a configuration object from the current form state. The syslog/webhook
+ * sink arrays are the authoritative in-memory copy (kept current by the modal),
+ * so they pass through the deep copy of loadedConfig untouched. Unmanaged
+ * sections (e.g. techniques) are likewise kept from the loaded config.
  * @returns {object}
  */
 function collectForm() {
@@ -322,53 +398,77 @@ function collectForm() {
     SECTION_SPECS.forEach(s => { out[s.key] = collectFields(s.key, s.fields); });
     out.alerts = out.alerts || {};
     out.alerts.console = collectFields('console', CONSOLE_FIELDS);
-    out.alerts.syslog = Array.from(document.querySelectorAll('.sink-card[data-kind="syslog"]'))
-        .map(card => collectFields(`sl-${card.dataset.idx}`, SYSLOG_FIELDS));
-    out.alerts.webhooks = Array.from(document.querySelectorAll('.sink-card[data-kind="webhook"]'))
-        .map(card => {
-            const i = card.dataset.idx;
-            const wh = collectFields(`wh-${i}`, WEBHOOK_FIELDS);
-            wh.headers = collectHeaders(i);
-            wh.auth = collectAuth(i);
-            return wh;
-        });
     return out;
 }
 
-/* ---------- sink add / remove ---------- */
+/* ---------- sink modal: add / edit / delete ---------- */
 
-/**
- * Re-read the form into loadedConfig, then re-render it. Used so edits
- * survive structural changes (adding or removing a sink).
- */
-function reRenderFromForm() {
-    loadedConfig = collectForm();
-    renderForm(loadedConfig);
+let modalKind = null;
+let modalIdx = null;
+
+/** The alerts list name for a sink kind. */
+function sinkListName(kind) {
+    return kind === 'syslog' ? 'syslog' : 'webhooks';
 }
 
 /**
- * Add a sink of the given kind, preserving current edits.
+ * Open the sink modal to add (idx null) or edit an existing sink.
  * @param {'syslog'|'webhook'} kind
+ * @param {?number} idx - sink index, or null to add a new one
  */
-function handleAddSink(kind) {
-    loadedConfig = collectForm();
+function openSinkModal(kind, idx) {
+    modalKind = kind;
+    modalIdx = idx;
+    const source = idx === null
+        ? (kind === 'syslog' ? SYSLOG_NEW : WEBHOOK_NEW)
+        : (loadedConfig.alerts[sinkListName(kind)][idx]);
+    const data = JSON.parse(JSON.stringify(source));
+    const noun = kind === 'syslog' ? 'syslog sink' : 'webhook';
+    document.getElementById('sink-modal-title').textContent = `${idx === null ? 'Add' : 'Edit'} ${noun}`;
+    document.getElementById('sink-modal-body').innerHTML = renderSinkFields(kind, data);
+    document.getElementById('sink-modal').hidden = false;
+}
+
+/** Close the sink modal and clear its state. */
+function closeSinkModal() {
+    document.getElementById('sink-modal').hidden = true;
+    document.getElementById('sink-modal-body').innerHTML = '';
+    modalKind = null;
+    modalIdx = null;
+}
+
+/** Collect the edited sink from the modal into a plain object. */
+function collectSinkModal(kind) {
+    const out = collectFields('m', kind === 'syslog' ? SYSLOG_FIELDS : WEBHOOK_FIELDS);
+    if (kind === 'webhook') {
+        out.headers = collectHeaders('m');
+        out.auth = collectAuth('m');
+    }
+    return out;
+}
+
+/** Save the modal's sink into the config and re-render the Events tab. */
+function handleSaveSink() {
+    const list = sinkListName(modalKind);
     loadedConfig.alerts = loadedConfig.alerts || {};
-    const list = kind === 'syslog' ? 'syslog' : 'webhooks';
     loadedConfig.alerts[list] = loadedConfig.alerts[list] || [];
-    loadedConfig.alerts[list].push(JSON.parse(JSON.stringify(kind === 'syslog' ? SYSLOG_NEW : WEBHOOK_NEW)));
-    renderForm(loadedConfig);
+    const data = collectSinkModal(modalKind);
+    if (modalIdx === null) loadedConfig.alerts[list].push(data);
+    else loadedConfig.alerts[list][modalIdx] = data;
+    closeSinkModal();
+    renderEventsTab(loadedConfig);
 }
 
 /**
- * Remove the sink at the given index, preserving current edits.
+ * Delete the sink at the given index after confirmation.
  * @param {'syslog'|'webhook'} kind
  * @param {number} idx
  */
-function handleRemoveSink(kind, idx) {
-    loadedConfig = collectForm();
-    const list = kind === 'syslog' ? 'syslog' : 'webhooks';
+function handleDeleteSink(kind, idx) {
+    if (!confirm('Delete this entry?')) return;
+    const list = sinkListName(kind);
     (loadedConfig.alerts[list] || []).splice(idx, 1);
-    renderForm(loadedConfig);
+    renderEventsTab(loadedConfig);
 }
 
 /* ---------- mode switching ---------- */
@@ -474,21 +574,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = e.target.closest('.seg-btn');
         if (btn) switchMode(btn.dataset.mode);
     });
-    document.getElementById('config-form').addEventListener('click', e => {
-        const add = e.target.closest('.add-sink');
-        if (add) { handleAddSink(add.dataset.kind); return; }
-        const rm = e.target.closest('.remove-sink');
-        if (rm) handleRemoveSink(rm.dataset.kind, parseInt(rm.dataset.idx, 10));
+    document.getElementById('cfg-tabs').addEventListener('click', e => {
+        const btn = e.target.closest('.cfg-tab');
+        if (!btn) return;
+        document.querySelectorAll('.cfg-tab').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.cfg-tab-panel').forEach(p => { p.hidden = p.dataset.tab !== btn.dataset.tab; });
     });
-    document.getElementById('config-form').addEventListener('change', e => {
+    document.getElementById('cfg-panel-events').addEventListener('click', e => {
+        const add = e.target.closest('.add-sink');
+        if (add) { openSinkModal(add.dataset.kind, null); return; }
+        const edit = e.target.closest('.edit-sink');
+        if (edit) { openSinkModal(edit.dataset.kind, parseInt(edit.dataset.idx, 10)); return; }
+        const del = e.target.closest('.del-sink');
+        if (del) handleDeleteSink(del.dataset.kind, parseInt(del.dataset.idx, 10));
+    });
+    document.getElementById('sink-modal-body').addEventListener('change', e => {
         const sel = e.target.closest('.auth-type');
         if (sel) {
-            const i = sel.dataset.idx;
-            document.getElementById(`wh-${i}-auth-extra`).innerHTML =
-                (AUTH_FIELDS[sel.value] || []).map(f =>
-                    `<div class="form-group"><label for="wh-${i}-auth-${f.key}">${escapeHtml(f.label)}</label>
-                        <input type="text" class="form-control form-control-sm" id="wh-${i}-auth-${f.key}"></div>`).join('');
+            const p = sel.dataset.prefix;
+            document.getElementById(`${p}-auth-extra`).innerHTML = renderAuthExtra(p, sel.value, null);
         }
+    });
+    document.getElementById('sink-modal-save').addEventListener('click', handleSaveSink);
+    document.getElementById('sink-modal-cancel').addEventListener('click', closeSinkModal);
+    document.getElementById('sink-modal-close').addEventListener('click', closeSinkModal);
+    document.getElementById('sink-modal').addEventListener('click', e => {
+        if (e.target.id === 'sink-modal') closeSinkModal();
     });
     loadConfig();
 });
