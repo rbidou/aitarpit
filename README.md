@@ -40,6 +40,8 @@ One process runs two listeners: the **decoy** that attackers reach, and a loopba
 **admin** surface for monitoring, configuration and reporting. Every engagement raises a
 graded event that is alerted and recorded.
 
+![AI Tarpit admin dashboard](screenshots/aitarpitdashboard.png)
+
 ## The techniques
 
 | | Technique | What it does to an agent |
@@ -90,6 +92,8 @@ python aitarpit.py                 # same as `run` — it is the default command
 > runs through `python aitarpit.py <command>` from the repository root; the companion test tool
 > has its own launcher, `python aitarpit-test.py <command>`.
 
+![AI Tarpit running from the command line](screenshots/aitarpitcli.png)
+
 Then confirm it behaves, with the bundled test tool:
 
 ```bash
@@ -115,6 +119,10 @@ Full manuals ship in [`docs/`](docs/), as both Markdown and PDF:
 - **Reference Manual** — [`docs/reference.md`](docs/reference.md) /
   [`docs/aitarpit-reference.pdf`](docs/aitarpit-reference.pdf) — Part 1 Concepts,
   Part 2 Installation, Part 3 Run (config, monitoring, reporting, CLI & Web UI), Part 4 Tests.
+
+The admin Web UI also builds interactive activity reports from captured sessions and events:
+
+![AI Tarpit activity report](screenshots/aitarpitreport.png)
 
 ## Testing it
 
